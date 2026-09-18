@@ -54,8 +54,14 @@ winget install kidchenko.Cota
 choco install cota
 ```
 
-Or take `Cota-Setup-x.y.z.exe` from [Releases](https://github.com/kidchenko/cota/releases),
-or `cota.exe` on its own to run without installing.
+Or download it directly:
+[**Cota-Setup.exe**](https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe).
+Every release also carries a versioned copy and `cota-x.y.z-x64.exe`, which runs
+without installing — see [Releases](https://github.com/kidchenko/cota/releases).
+
+`Cota-Setup.exe` is an unversioned alias of the same installer, published in
+every release so that `/releases/latest/download/` keeps resolving. `build.ps1`
+writes it alongside the versioned one.
 
 The binary is not code-signed, so SmartScreen warns on first run. Click
 **More info**, then **Run anyway**.

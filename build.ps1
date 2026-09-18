@@ -103,6 +103,15 @@ if (-not $SkipInstaller) {
     $setup = Join-Path $PSScriptRoot "dist\Cota-Setup-$version.exe"
     Ok ("Cota-Setup-$version.exe   {0:N2} MB" -f ((Get-Item $setup).Length / 1MB))
     Ok ("sha256  " + (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower())
+
+    # A copy under a name that never changes. The landing page's download button
+    # uses GitHub's /releases/latest/download/<name>, which only resolves when
+    # the asset is named identically in every release -- so every release has to
+    # carry this alias or the button starts 404ing the day after a version bump.
+    Copy-Item $setup (Join-Path $PSScriptRoot 'dist\Cota-Setup.exe') -Force
+    # And the bare executable, for running without installing.
+    Copy-Item $exe (Join-Path $PSScriptRoot "dist\cota-$version-x64.exe") -Force
+    Ok 'dist\Cota-Setup.exe (stable alias) and the portable exe written too'
   }
 }
 

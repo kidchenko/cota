@@ -237,11 +237,19 @@
     <p class="tagline">Your Claude usage limits, in the Windows tray</p>
 
     <div class="cta">
-      <a class="download" href="https://github.com/kidchenko/cota/releases/latest">Download for Windows</a>
+      <!-- The unversioned asset name is deliberate. GitHub's
+           /releases/latest/download/<name> only resolves when the name is
+           identical across releases, so a versioned filename here would have to
+           be edited on the page every time one ships -- and a download button
+           pointing at a version that no longer exists is worse than no button.
+           build.ps1 writes dist\Cota-Setup.exe alongside the versioned copy so
+           every release carries both. -->
+      <a class="download" href="https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe">Download for Windows</a>
       <p class="alt">or <code>winget install kidchenko.Cota</code> · <code>choco install cota</code></p>
     </div>
 
-    <p class="req" id="req">Windows 10 or later · x64 · free and open source</p>
+    <p class="req" id="req">Windows 10 or later · x64 · free and open source<br>
+      <a href="https://github.com/kidchenko/cota/releases">All releases</a> — portable build, checksums, notes</p>
   </div>
 </header>
 
