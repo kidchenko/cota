@@ -344,8 +344,9 @@ fn poll_once(
         }
         // Logged at error level even though we recover: a run of these is the
         // difference between "the number is stale" and "the number is wrong",
-        // and only the log can tell them apart after the fact.
-        Err(e) => lerror!("poll failed: {e}"),
+        // and only the log can tell them apart after the fact. `detail()` rather
+        // than Display, so the log keeps the raw transport error the panel hides.
+        Err(e) => lerror!("poll failed: {}", e.detail()),
     }
 
     let due = last_attribution.is_none_or(|t| t.elapsed() >= ATTRIBUTION_EVERY);

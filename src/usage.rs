@@ -147,7 +147,11 @@ impl std::fmt::Display for FetchError {
             Self::Unauthorized => write!(f, "token rejected \u{2014} run claude once"),
             Self::RateLimited => write!(f, "rate limited \u{2014} backing off"),
             Self::Http(c) => write!(f, "endpoint returned HTTP {c}"),
-            Self::Transport(e) => write!(f, "network: {e}"),
+            // Deliberately not the raw io error. A dropped Wi-Fi surfaces as
+            // "failed to lookup address information", which is true and useless
+            // in a panel; the technical string is kept for the log via
+            // [`FetchError::detail`].
+            Self::Transport(_) => write!(f, "No network connection"),
             Self::Malformed(e) => write!(f, "unexpected response: {e}"),
         }
     }
@@ -163,6 +167,17 @@ impl FetchError {
             Self::Http(_) => "endpoint error",
             Self::Transport(_) => "offline",
             Self::Malformed(_) => "unexpected response",
+        }
+    }
+
+    /// The full technical description, for the log. `Display` is written for a
+    /// human glancing at a panel and swallows the underlying transport error;
+    /// this keeps the raw detail the log needs to tell a dropped connection
+    /// apart from DNS, a proxy, or a TLS handshake that failed.
+    pub fn detail(&self) -> String {
+        match self {
+            Self::Transport(e) => format!("network: {e}"),
+            other => other.to_string(),
         }
     }
 }
@@ -471,5 +486,19 @@ mod tests {
         let body = r#"{"limits":[{"kind":"weekly_brand_new_bucket","percent":3}]}"#;
         let s = parse(body).unwrap();
         assert_eq!(s.limits[0].label, "Weekly Brand New Bucket");
+    }
+
+    #[test]
+    fn offline_reads_cleanly_and_the_log_keeps_the_detail() {
+        // A dropped connection must reach the panel as a sentence, not as the
+        // raw resolver error — while the log still gets the technical string.
+        let e = FetchError::Transport("io: failed to lookup address information".into());
+        assert_eq!(e.to_string(), "No network connection");
+        assert_eq!(e.short(), "offline");
+        assert!(
+            e.detail().contains("failed to lookup address information"),
+            "the log must keep the underlying error: {}",
+            e.detail()
+        );
     }
 }
