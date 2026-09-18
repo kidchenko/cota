@@ -17,10 +17,13 @@
 
 use crate::usage::Severity;
 
+// Named `win32`, not `windows`: a module called `windows` would collide with the
+// `windows` crate the moment this file's submodule does `use super::*`, which is
+// an error only the Windows build sees.
 #[cfg(windows)]
-mod windows;
+mod win32;
 #[cfg(windows)]
-pub use windows::{preview, render_to_rgba, report_failure, Panel};
+pub use win32::{preview, render_to_rgba, report_failure, Panel};
 
 #[cfg(target_os = "macos")]
 mod macos;
