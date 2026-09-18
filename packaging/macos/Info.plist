@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Cota</string>
+    <key>CFBundleDisplayName</key>
+    <string>Cota</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.kidchenko.cota</string>
+    <key>CFBundleExecutable</key>
+    <string>cota</string>
+    <key>CFBundleIconFile</key>
+    <string>Cota</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>@VERSION@</string>
+    <key>CFBundleVersion</key>
+    <string>@VERSION@</string>
+    <!-- The whole point: an agent that lives in the menu bar with no Dock icon
+         and no menu of its own. Without this the tray app would take over the
+         Dock and the main menu on launch. -->
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+    <key>NSSupportsSuddenTermination</key>
+    <false/>
+</dict>
+</plist>

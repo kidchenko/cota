@@ -21,19 +21,27 @@ tray-icon  = "0.24"
 # Blocking. Picked over reqwest because this app makes one GET a minute and a
 # Tokio runtime would cost more binary than the feature.
 #
-# Deliberately schannel rather than the default bundled-rustls: on a managed
-# work machine the TLS is often intercepted by the corporate proxy, and only
-# the Windows certificate store knows about that root. Bundled webpki roots
-# would hard-fail there with an opaque handshake error. `win-system-proxy` is
-# the other half of the same problem.
+# `native-tls` deliberately, not bundled-rustls: it defers to the OS trust store
+# on both platforms. On a managed Windows box the TLS is often intercepted by a
+# corporate proxy whose root only the Windows certificate store knows about, and
+# bundled webpki roots would hard-fail there with an opaque handshake error; on
+# macOS the same reasoning points at the login keychain's roots. The Windows
+# half also wants `win-system-proxy` (added under the target table below).
 ureq = { version = "3.4", default-features = false, features = [
     "native-tls",
-    "win-system-proxy",
     "gzip",
 ] }
-tauri-winrt-notification = "0.8"
 
-[dependencies.windows]
+# ---------------------------------------------------------------------------
+# Windows
+# ---------------------------------------------------------------------------
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "0.8"
+# The other half of the corporate-proxy story; unioned onto the base ureq
+# features above on this target only.
+ureq = { version = "3.4", default-features = false, features = ["win-system-proxy"] }
+
+[target.'cfg(windows)'.dependencies.windows]
 version  = "0.62"
 features = [
     "Win32_Foundation",
@@ -50,8 +58,24 @@ features = [
     "Win32_UI_WindowsAndMessaging",
 ]
 
-[build-dependencies]
+# The build script's cfg matches the host: resource embedding only happens when
+# building on Windows, which is where the Windows release is built anyway.
+[target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
+
+# ---------------------------------------------------------------------------
+# macOS
+# ---------------------------------------------------------------------------
+# objc2 and its framework bindings are compile-time only — they generate
+# zero-cost method wrappers, so the ring's "native, no heavy runtime" claim
+# holds on this side too. `libc` is for localtime_r (the log timestamp) and the
+# single-instance lock.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2            = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit    = "0.3"
+block2           = "0.6"
+libc             = "0.2"
 
 # Size is a first-class goal, same as Cantos.
 [profile.release]

@@ -1,6 +1,6 @@
 // No console window: this is a tray app, and a flashing conhost on login would
-// be the first thing every user complained about.
-#![windows_subsystem = "windows"]
+// be the first thing every user complained about. No-op off Windows.
+#![cfg_attr(windows, windows_subsystem = "windows")]
 
 //! Startup and wiring. The work happens elsewhere:
 //!

@@ -46,7 +46,13 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+# ---------------------------------------------------------------------- macOS
+# build.sh assembles dist/Cota.app (already covered by /dist) and can wrap it in
+# a .dmg there too. Finder litter is the only thing left to keep out.
+.DS_Store
+
 # --------------------------------------------------------------------- runtime
 # Nothing the app writes at runtime lives in the repo -- config.json, state.json
-# and cota.log all go to %APPDATA%\Cota. Listed here only so the next person
-# does not go looking for them.
+# and cota.log all go to %APPDATA%\Cota on Windows and to
+# ~/Library/Application Support/Cota on macOS. Noted here only so the next
+# person does not go looking for them.

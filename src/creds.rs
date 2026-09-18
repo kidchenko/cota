@@ -1,16 +1,20 @@
 //! Finding the Claude Code OAuth token.
 //!
 //! On Windows the token is a plain JSON file at `~/.claude/.credentials.json`.
-//! There is no DPAPI blob and no Credential Manager entry to unwrap — macOS is
-//! the platform that uses a Keychain, and that split is the one genuinely
-//! platform-specific thing in this app.
+//! On macOS Claude Code puts the same JSON in the login keychain, under the
+//! generic-password service `Claude Code-credentials`; that split is the one
+//! genuinely platform-specific thing in this app. We read the keychain via the
+//! `security(1)` tool rather than the Security framework — the first read by an
+//! app that did not create the item prompts for access once, which is the same
+//! either way, and shelling out costs no bindings. The file is still tried as a
+//! fallback, for `CLAUDE_CONFIG_DIR` setups and older layouts.
 //!
 //! We deliberately do **not** cache the token, and deliberately do **not**
-//! implement OAuth refresh. The file carries `expiresAt` and a `refreshToken`,
-//! so refreshing would be possible — but Claude Code already refreshes it on
-//! our behalf, so re-reading the file on every poll gets the same result for
-//! none of the code, and none of the risk of two processes racing to spend a
-//! single-use refresh token.
+//! implement OAuth refresh. The credentials carry `expiresAt` and a
+//! `refreshToken`, so refreshing would be possible — but Claude Code already
+//! refreshes on our behalf, so re-reading on every poll gets the same result
+//! for none of the code, and none of the risk of two processes racing to spend
+//! a single-use refresh token.
 
 use crate::log::lwarn;
 use serde::Deserialize;
@@ -73,14 +77,7 @@ pub fn claude_dir() -> Option<PathBuf> {
 }
 
 pub fn load() -> Result<Credentials, CredsError> {
-    let path = claude_dir()
-        .map(|d| d.join(".credentials.json"))
-        .ok_or(CredsError::NotSignedIn)?;
-
-    if !path.exists() {
-        return Err(CredsError::NotSignedIn);
-    }
-    let text = std::fs::read_to_string(&path).map_err(|e| CredsError::Unreadable(e.to_string()))?;
+    let text = raw_credentials()?;
     let parsed: CredentialsFile =
         serde_json::from_str(&text).map_err(|e| CredsError::Unreadable(e.to_string()))?;
 
@@ -106,4 +103,48 @@ pub fn load() -> Result<Credentials, CredsError> {
         expires_at_secs,
         subscription: oauth.subscription_type,
     })
+}
+
+/// The raw credentials JSON, from wherever this platform keeps it.
+#[cfg(windows)]
+fn raw_credentials() -> Result<String, CredsError> {
+    credentials_file_text()
+}
+
+#[cfg(target_os = "macos")]
+fn raw_credentials() -> Result<String, CredsError> {
+    // The keychain is where Claude Code writes it on macOS; the file is the
+    // fallback for CLAUDE_CONFIG_DIR and older layouts.
+    if let Some(text) = keychain_credentials() {
+        return Ok(text);
+    }
+    credentials_file_text()
+}
+
+/// `~/.claude/.credentials.json` (or under `CLAUDE_CONFIG_DIR`).
+fn credentials_file_text() -> Result<String, CredsError> {
+    let path = claude_dir()
+        .map(|d| d.join(".credentials.json"))
+        .ok_or(CredsError::NotSignedIn)?;
+    if !path.exists() {
+        return Err(CredsError::NotSignedIn);
+    }
+    std::fs::read_to_string(&path).map_err(|e| CredsError::Unreadable(e.to_string()))
+}
+
+/// The generic-password item Claude Code stores under `Claude Code-credentials`.
+/// `None` when the item is absent or the read is denied — the file fallback then
+/// gets its turn, and if that also fails the caller reports "not signed in".
+#[cfg(target_os = "macos")]
+fn keychain_credentials() -> Option<String> {
+    let out = std::process::Command::new("/usr/bin/security")
+        .args(["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let text = String::from_utf8(out.stdout).ok()?;
+    let text = text.trim();
+    (!text.is_empty()).then(|| text.to_string())
 }

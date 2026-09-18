@@ -20,9 +20,6 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
-use windows::Win32::Foundation::SYSTEMTIME;
-use windows::Win32::System::SystemInformation::GetLocalTime;
-
 static SINK: Mutex<Option<File>> = Mutex::new(None);
 static DEBUG: AtomicBool = AtomicBool::new(false);
 
@@ -65,11 +62,40 @@ pub fn init() {
     }
 }
 
+/// Local wall-clock time, to the millisecond. Local rather than UTC because the
+/// log is read by a human next to a clock on the same wall.
+#[cfg(windows)]
 fn stamp() -> String {
-    let t: SYSTEMTIME = unsafe { GetLocalTime() };
+    use windows::Win32::System::SystemInformation::GetLocalTime;
+    let t = unsafe { GetLocalTime() };
     format!(
         "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}",
         t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, t.wMilliseconds
+    )
+}
+
+#[cfg(target_os = "macos")]
+fn stamp() -> String {
+    let dur = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = dur.as_secs() as libc::time_t;
+    let millis = dur.subsec_millis();
+    // localtime_r turns the UTC time_t into the process's local calendar time,
+    // honouring the current zone and DST without pulling in a date crate.
+    let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+    unsafe {
+        libc::localtime_r(&secs, &mut tm);
+    }
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}",
+        tm.tm_year + 1900,
+        tm.tm_mon + 1,
+        tm.tm_mday,
+        tm.tm_hour,
+        tm.tm_min,
+        tm.tm_sec,
+        millis
     )
 }
 

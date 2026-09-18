@@ -4,15 +4,15 @@
 
 # Cota
 
-Your Claude usage limits, in the Windows tray.<br>
+Your Claude usage limits, in the tray.<br>
 A ring that fills as your week does, so you find out before you hit the wall.
 
 <sub><i>cota</i> — Portuguese for <i>quota</i></sub>
 
 </div>
 
-A single 0.99 MB executable, no runtime dependencies. Sits in the tray using
-about 5 MB and no measurable CPU.
+A single ~1 MB executable, no runtime dependencies (0.99 MB on Windows,
+1.2 MB on macOS). Sits in the tray using about 5 MB and no measurable CPU.
 
 ---
 
@@ -48,6 +48,8 @@ endpoint rate-limits hard enough that asking is actively counterproductive.
 
 ## Install
 
+### Windows
+
 ```powershell
 winget install kidchenko.Cota
 # or
@@ -73,6 +75,18 @@ borrowing PowerShell's registration — the toast still appears, but under
 PowerShell's name. The app checks for the shortcut rather than guessing, because
 Windows offers no way to ask whether an id is known: it simply declines to show
 the toast, silently.
+
+### macOS
+
+No published package yet — build `Cota.app` yourself (see [Build](#build)); a
+`./build.sh --dmg` build wraps it for handing around. It lives in the menu bar,
+with no Dock icon (`LSUIElement`). An unsigned download is quarantined by
+Gatekeeper: right-click it, choose **Open**, then **Open** again — or
+`xattr -dr com.apple.quarantine Cota.app`.
+
+Notifications go through `osascript`, the same borrowed-identity trade Windows
+makes without the installer: the toast appears, but under the system script
+runner's name rather than "Cota" until the app is notarized.
 
 ### Requirements
 
@@ -151,10 +165,14 @@ here so it can be bumped without a rebuild.
 
 ## Credentials
 
-On Windows, Claude Code stores its OAuth token as plain JSON at
-`~/.claude/.credentials.json`. Cota reads that file and sends the token to
-`api.anthropic.com` — the service that issued it — and to nowhere else. It is
-the only host Cota contacts.
+Claude Code stores its OAuth token where each platform keeps such things: a
+plain JSON file at `~/.claude/.credentials.json` on Windows, and the login
+Keychain (generic-password service `Claude Code-credentials`) on macOS. Cota
+reads whichever applies — via the `security` tool on macOS, falling back to the
+file — and sends the token to `api.anthropic.com`, the service that issued it,
+and to nowhere else. It is the only host Cota contacts. The first Keychain read
+by a fresh build prompts for access once, as macOS does for any app touching an
+item it did not create.
 
 Cota does **not** cache the token and does **not** implement OAuth refresh,
 though the file has everything needed to. Claude Code already refreshes it, so
@@ -164,8 +182,9 @@ token.
 
 `CLAUDE_CONFIG_DIR` is honoured if you have moved that directory.
 
-TLS goes through schannel and the Windows certificate store rather than a
-bundled root set, and the system proxy is respected. On a managed work machine
+TLS goes through the OS trust store — schannel and the Windows certificate store,
+the Keychain's roots via Secure Transport on macOS — rather than a bundled root
+set, and on Windows the system proxy is respected. On a managed work machine
 where the proxy intercepts TLS, bundled roots fail with an opaque handshake
 error; the machine's own store knows about that root.
 
@@ -260,6 +279,21 @@ Set `COTA_LOG=debug` and the full response body lands in
 Needs the Rust MSVC toolchain. Nothing else — no WebView2, no installer
 tooling.
 
+On macOS the counterpart is `build.sh`:
+
+```bash
+./build.sh              # test + release binary + Cota.app
+./build.sh --run        # ... then launch it in the menu bar
+./build.sh --panel      # ... hold the panel on screen to look at it
+./build.sh --shot       # ... re-render docs/img/panel.png
+./build.sh --dmg        # ... wrap Cota.app in a .dmg
+```
+
+It assembles the `.app` bundle (a menu-bar agent, `LSUIElement`, no Dock icon),
+gives it a `.icns` from the 256px art, and ad-hoc signs it so the Keychain and
+Gatekeeper see one stable identity across rebuilds. Needs the Rust toolchain and
+the macOS SDK; nothing else.
+
 The `-Icons` flag exists because the ring is only ever visible at 16×16 in the
 corner of a taskbar, which is a poor place to notice that an arc runs the wrong
 way. It dumps every face from the real renderer — including the Claude mark —
@@ -284,15 +318,25 @@ page's shadow can follow the alpha rather than tracing a box around it.
 
 Both the ring and the mark are drawn in code rather than shipped as sprites.
 The ring because it is a continuous readout and a hundred PNGs would be silly;
-the mark because it is sized from `SM_CXMENUCHECK` at startup, so it is sharp
-at whatever DPI the machine happens to be running rather than at 100% only.
+the mark because it is sized to the surface it lands on — `SM_CXMENUCHECK` at
+startup on Windows, the backing scale on macOS — so it is sharp at whatever DPI
+the machine happens to be running rather than at 100% only.
+
+The same split runs the whole way down. `tray-icon`, `muda` and `tao` are
+cross-platform, the ring and panel layout are pure Rust shared by both, and only
+the few genuinely OS-specific pieces fork: the panel is GDI on Windows and
+AppKit (`NSPanel` + `NSBezierPath`/`NSString` drawing) on macOS, credentials are
+a file or the Keychain, autostart is a Run key or a LaunchAgent, single-instance
+is a named event or a Unix socket, and toasts are WinRT or `osascript`. The
+`--shot` render draws the live panel into an offscreen bitmap either way — a DIB
+section on Windows, a detached flipped `NSView` on macOS — for the same reason:
+no screen involved, nothing behind to bleed, reproducible at any scale.
 
 ## Not yet
 
-- **macOS.** The port is mostly free — `tray-icon`, `muda` and `tao` are all
-  cross-platform and Cota needs almost no Win32 — but credentials live in the
-  Keychain there, not a file, and autostart is a LaunchAgent rather than a
-  registry key. Two files split; the rest is shared.
+- **A signed, notarized macOS build.** The app runs and builds today (`build.sh`),
+  ad-hoc signed; a Developer ID signature and notarization would drop the
+  Gatekeeper warning and let toasts carry Cota's own name.
 - **A history view.** The samples are already on disk in `state.json`.
 
 ## License

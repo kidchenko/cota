@@ -55,8 +55,17 @@ impl Default for Config {
 }
 
 impl Config {
+    /// `%APPDATA%\Cota` on Windows, `~/Library/Application Support/Cota` on
+    /// macOS — the per-user, per-app spot each platform expects.
+    #[cfg(windows)]
     pub fn dir() -> Option<PathBuf> {
         std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Cota"))
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn dir() -> Option<PathBuf> {
+        std::env::var_os("HOME")
+            .map(|h| PathBuf::from(h).join("Library/Application Support/Cota"))
     }
 
     pub fn path() -> Option<PathBuf> {
@@ -119,7 +128,7 @@ impl Config {
     /// half-written config behind.
     pub fn save(&self) -> std::io::Result<()> {
         let (Some(dir), Some(path)) = (Self::dir(), Self::path()) else {
-            return Err(std::io::Error::other("no APPDATA in environment"));
+            return Err(std::io::Error::other("no config directory in environment"));
         };
         std::fs::create_dir_all(&dir)?;
         let json = serde_json::to_string_pretty(self)?;
