@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cota — your Claude usage limits, in the Windows tray</title>
-<meta name="description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. A 1 MB tray app for Windows. Free and open source.">
+<title>Cota — your Claude usage limits, in the tray</title>
+<meta name="description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. A 1 MB tray app for macOS and Windows. Free and open source.">
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
 
-<meta property="og:title" content="Cota — your Claude usage limits, in the Windows tray">
-<meta property="og:description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall.">
+<meta property="og:title" content="Cota — your Claude usage limits, in the tray">
+<meta property="og:description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. For macOS and Windows.">
 <meta property="og:image" content="https://josebarbosa.dev/cota/img/icon-256.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
@@ -78,7 +78,7 @@
     max-width: 32ch;
   }
 
-  .cta { margin: 38px 0 0; }
+  .cta { margin: 38px 0 0; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 
   .download {
     display: inline-block;
@@ -88,14 +88,36 @@
     font-size: 1.05rem;
     padding: 14px 30px;
     border-radius: 10px;
-    transition: transform .12s ease, filter .12s ease;
+    transition: transform .12s ease, filter .12s ease, background .12s ease;
   }
   .download:hover { text-decoration: none; filter: brightness(1.08); transform: translateY(-1px); }
+
+  /* The secondary platform: a quiet outline, so the primary reads first. */
+  .download.ghost {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1.5px #2b3040;
+  }
+  .download.ghost:hover { filter: none; background: rgba(63,185,80,.09); }
+
+  /* OS-aware. The default (no script, or a non-Mac visitor) leads with Windows;
+     on a Mac the two flip and the macOS button becomes the filled primary and
+     comes first. Driven by one body class, so with JS off both buttons are still
+     present and both work. */
+  .os-mac .dl-win { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px #2b3040; }
+  .os-mac .dl-win:hover { filter: none; background: rgba(63,185,80,.09); }
+  .os-mac .dl-mac { background: var(--accent); color: #07230e; box-shadow: none; order: -1; }
+  .os-mac .dl-mac:hover { filter: brightness(1.08); background: var(--accent); }
 
   .alt { margin: 18px 0 0; color: var(--faint); font-size: .95rem; }
   .alt code { background: transparent; border: 0; color: var(--dim); padding: 0; }
 
   .req { color: var(--faint); font-size: .88rem; margin: 26px 0 0; }
+
+  /* Per-OS lines: the download hints and requirements swap with the buttons. */
+  .for-mac { display: none; }
+  .os-mac .for-win { display: none; }
+  .os-mac .for-mac { display: block; }
 
   /* ----------------------------------------------------------------- shot */
   .shot { margin: 40px auto 0; text-align: center; }
@@ -234,22 +256,26 @@
   <div class="wrap">
     <img class="mark" src="img/icon.svg" alt="" width="132" height="132">
     <h1>Cota</h1>
-    <p class="tagline">Your Claude usage limits, in the Windows tray</p>
+    <p class="tagline">Your Claude usage limits, in the tray</p>
 
     <div class="cta">
-      <!-- The unversioned asset name is deliberate. GitHub's
+      <!-- The unversioned asset names are deliberate. GitHub's
            /releases/latest/download/<name> only resolves when the name is
            identical across releases, so a versioned filename here would have to
            be edited on the page every time one ships -- and a download button
            pointing at a version that no longer exists is worse than no button.
-           build.ps1 writes dist\Cota-Setup.exe alongside the versioned copy so
-           every release carries both. -->
-      <a class="download" href="https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe">Download for Windows</a>
-      <p class="alt">or <code>winget install kidchenko.Cota</code> · <code>choco install cota</code></p>
+           build.ps1 writes dist\Cota-Setup.exe and build.sh writes dist/Cota.dmg
+           alongside the versioned copies, so every release carries both. -->
+      <a class="download dl-win" href="https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe">Download for Windows</a>
+      <a class="download ghost dl-mac" href="https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg">Download for macOS</a>
     </div>
+    <p class="alt for-win">or <code>winget install kidchenko.Cota</code> · <code>choco install cota</code></p>
+    <p class="alt for-mac">Apple silicon · unsigned, so the first launch is right-click&nbsp;→&nbsp;<strong>Open</strong></p>
 
-    <p class="req" id="req">Windows 10 or later · x64 · free and open source<br>
+    <p class="req for-win">Windows 10 or later · x64 · free and open source<br>
       <a href="https://github.com/kidchenko/cota/releases">All releases</a> — portable build, checksums, notes</p>
+    <p class="req for-mac">macOS 11 or later · Apple silicon · free and open source<br>
+      <a href="https://github.com/kidchenko/cota/releases">All releases</a> — checksums, notes</p>
   </div>
 </header>
 
@@ -267,7 +293,8 @@
     in a session you already have open. Cota is the same numbers when you
     <em>didn't</em> ask.</p>
 
-    <p>A ring sits in the notification area and fills as your fullest limit does.
+    <p>A ring sits in the tray — the macOS menu bar or the Windows notification
+    area — and fills as your fullest limit does.
     It goes amber at 75% and red at 90%, so "I have two days of weekly left" is
     something you know rather than something you check — and finding out you are
     nearly out stops being something that happens halfway through a refactor.</p>
@@ -292,8 +319,8 @@
       </div>
     </div>
     <p style="text-align:center;font-size:.85rem;margin-top:14px">
-      Actual size in your taskbar: 16&nbsp;pixels. These are the same ring, drawn
-      larger by the same code.
+      Actual size in the tray: 16&nbsp;pixels on Windows, a touch larger in the
+      macOS menu bar. These are the same ring, drawn larger here by the same code.
     </p>
   </section>
 
@@ -323,13 +350,21 @@
     <p>It never asks you for a credential of its own, and it does not cache or
     refresh the token: Claude Code already does that, so Cota simply re-reads the
     file each time.</p>
-    <p>TLS goes through the Windows certificate store rather than a bundled root
-    set, and the system proxy is respected — so it keeps working on a managed
-    machine where the proxy inspects traffic.</p>
+    <p>TLS goes through the operating system's own trust store — the Windows
+    certificate store, the Keychain's roots on macOS — rather than a bundled root
+    set, and on Windows the system proxy is respected, so it keeps working on a
+    managed machine where the proxy inspects traffic.</p>
   </section>
 
   <section>
     <h2>Frequently asked questions</h2>
+
+    <details>
+      <summary>Which platforms does it run on?</summary>
+      <p>macOS 11 or later (Apple silicon) and Windows 10 or later (x64). The
+      page offers the build for the system you are on; both are on the
+      <a href="https://github.com/kidchenko/cota/releases">releases</a> page.</p>
+    </details>
 
     <details>
       <summary>Do I need anything installed first?</summary>
@@ -383,10 +418,14 @@
     </details>
 
     <details>
-      <summary>Why does SmartScreen warn about it?</summary>
-      <p>The binary is not code-signed. Click <strong>More info</strong>, then
-      <strong>Run anyway</strong>. The source is on GitHub if you would rather
-      build it yourself — it needs the Rust MSVC toolchain and nothing else.</p>
+      <summary>Why does my computer warn about it the first time?</summary>
+      <p>The builds are not code-signed. On Windows, SmartScreen shows a notice —
+      click <strong>More info</strong>, then <strong>Run anyway</strong>. On
+      macOS, Gatekeeper blocks a first double-click — right-click the app, choose
+      <strong>Open</strong>, then <strong>Open</strong> again; once is enough.</p>
+      <p>The source is on GitHub if you would rather build it yourself: the Rust
+      toolchain and nothing else — <code>build.ps1</code> on Windows,
+      <code>build.sh</code> on macOS.</p>
     </details>
 
     <details>
@@ -406,6 +445,19 @@
     <p>Not affiliated with Anthropic.</p>
   </div>
 </footer>
+
+<script>
+  // Lead with the visitor's platform. Progressive enhancement only: with this
+  // disabled both download buttons are still shown, Windows first.
+  (function () {
+    var ua = navigator.userAgent || "";
+    var plat = (navigator.userAgentData && navigator.userAgentData.platform) ||
+               navigator.platform || "";
+    if (/mac/i.test(plat) || /Mac OS X/.test(ua)) {
+      document.body.classList.add("os-mac");
+    }
+  })();
+</script>
 
 </body>
 </html>

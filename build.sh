@@ -110,6 +110,11 @@ if [ "$dmg" -eq 1 ]; then
     hdiutil create -quiet -volname Cota -srcfolder "$app" -ov -format UDZO "$dmg_path"
     ok "$(printf 'Cota-%s.dmg   %.2f MB' "$version" "$(echo "scale=2; $(stat -f%z "$dmg_path")/1048576" | bc)")"
     ok "sha256  $(shasum -a 256 "$dmg_path" | cut -d' ' -f1)"
+    # Unversioned alias, so github.com/.../releases/latest/download/Cota.dmg
+    # keeps resolving without editing the download button each release. The
+    # landing page links to exactly this name.
+    cp -f "$dmg_path" dist/Cota.dmg
+    ok 'Cota.dmg (unversioned alias for the website download button)'
   else
     warn 'hdiutil not found; skipping the disk image'
   fi
