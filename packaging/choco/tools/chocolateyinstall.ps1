@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$version  = '0.1.0'
+$version  = '0.0.1'
 $url      = "https://github.com/kidchenko/cota/releases/download/v$version/Cota-Setup-$version.exe"
 
 $packageArgs = @{
@@ -8,7 +8,7 @@ $packageArgs = @{
   fileType       = 'EXE'
   url64bit       = $url
   # Replaced by the release workflow, which computes it from the built artifact.
-  checksum64     = 'REPLACE_WITH_SHA256'
+  checksum64     = '47a89bcdb535fae6fd0f845164c7873b3e34af77edc6094149392009c5a0ad38'
   checksumType64 = 'sha256'
   # Inno Setup silent switches. /NORESTART because nothing here needs a reboot.
   silentArgs     = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-'

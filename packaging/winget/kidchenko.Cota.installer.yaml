@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 PackageIdentifier: kidchenko.Cota
-PackageVersion: 0.1.0
+PackageVersion: 0.0.1
 InstallerType: inno
 Scope: machine
 InstallModes:
@@ -10,11 +10,11 @@ InstallModes:
 UpgradeBehavior: install
 # Inno appends _is1 to the AppId GUID from cota.iss.
 ProductCode: '{3C7E9B14-5D82-4A6F-9E03-8B1D4F2A6C57}_is1'
-ReleaseDate: 2026-09-17
+ReleaseDate: 2026-09-18
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/kidchenko/cota/releases/download/v0.1.0/Cota-Setup-0.1.0.exe
+    InstallerUrl: https://github.com/kidchenko/cota/releases/download/v0.0.1/Cota-Setup-0.0.1.exe
     # Filled in by the release workflow from the built artifact.
-    InstallerSha256: REPLACE_WITH_SHA256
+    InstallerSha256: 47a89bcdb535fae6fd0f845164c7873b3e34af77edc6094149392009c5a0ad38
 ManifestType: installer
 ManifestVersion: 1.6.0

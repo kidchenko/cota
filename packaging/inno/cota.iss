@@ -5,7 +5,7 @@
 #define AppName    "Cota"
 ; The release workflow passes /DAppVersion=x.y.z; this is the local default.
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.0.1"
 #endif
 #define AppPublisher "kidchenko"
 #define AppURL     "https://github.com/kidchenko/cota"
@@ -22,7 +22,7 @@
 AppId={{3C7E9B14-5D82-4A6F-9E03-8B1D4F2A6C57}
 AppName={#AppName}
 AppVersion={#AppVersion}
-; Without this Add/Remove Programs reads "Cota version 0.1.0".
+; Without this Add/Remove Programs reads "Cota version 0.0.1".
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
