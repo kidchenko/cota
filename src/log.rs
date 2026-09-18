@@ -1,0 +1,111 @@
+//! Minimal file logging to `%APPDATA%\Cota\cota.log`.
+//!
+//! Under `windows_subsystem = "windows"` there is no console, so `eprintln!`
+//! goes nowhere. Without a log, "the number looks wrong" is unanswerable — the
+//! user cannot tell whether the token expired, the endpoint changed shape, the
+//! poll is being rate-limited, or the app simply is not running. Every one of
+//! those looks identical from the outside: a stale percentage.
+//!
+//! Hand-rolled rather than pulling in `log` + a backend, for the same reason
+//! as Cantos: this needs about sixty lines and the binary is a stated
+//! constraint.
+//!
+//! Volume is low enough to leave on permanently — one line per poll outcome.
+//! Set `COTA_LOG=debug` for the full response body on every fetch, which is
+//! the thing you want the day the schema moves under us.
+
+use std::fs::{File, OpenOptions};
+use std::io::Write;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+
+use windows::Win32::Foundation::SYSTEMTIME;
+use windows::Win32::System::SystemInformation::GetLocalTime;
+
+static SINK: Mutex<Option<File>> = Mutex::new(None);
+static DEBUG: AtomicBool = AtomicBool::new(false);
+
+/// Rotate at 1 MB. A tray app can run for months, and an unbounded log on
+/// someone else's disk is not our call to make.
+const MAX_BYTES: u64 = 1_000_000;
+
+pub fn path() -> Option<PathBuf> {
+    crate::config::Config::dir().map(|d| d.join("cota.log"))
+}
+
+pub fn debug_enabled() -> bool {
+    DEBUG.load(Ordering::Relaxed)
+}
+
+pub fn init() {
+    DEBUG.store(
+        std::env::var("COTA_LOG")
+            .map(|v| v.eq_ignore_ascii_case("debug"))
+            .unwrap_or(false),
+        Ordering::Relaxed,
+    );
+
+    let Some(p) = path() else { return };
+    if let Some(dir) = p.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    // Keep one previous generation, so a crash loop cannot erase the run that
+    // actually explains it.
+    if std::fs::metadata(&p)
+        .map(|m| m.len() > MAX_BYTES)
+        .unwrap_or(false)
+    {
+        let _ = std::fs::rename(&p, p.with_extension("log.1"));
+    }
+    if let Ok(f) = OpenOptions::new().create(true).append(true).open(&p) {
+        if let Ok(mut sink) = SINK.lock() {
+            *sink = Some(f);
+        }
+    }
+}
+
+fn stamp() -> String {
+    let t: SYSTEMTIME = unsafe { GetLocalTime() };
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}",
+        t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond, t.wMilliseconds
+    )
+}
+
+pub fn write(level: &str, msg: &str) {
+    // Formatted up front so the line reaches the file in a single write; the
+    // poller thread and the UI thread both log, and interleaved fragments are
+    // worst exactly when the log matters.
+    let line = format!("{} {:<5} {}\n", stamp(), level, msg);
+    let Ok(mut sink) = SINK.lock() else { return };
+    if let Some(f) = sink.as_mut() {
+        // A failed write is ignored on purpose: logging must never be the
+        // reason the app misbehaves.
+        let _ = f.write_all(line.as_bytes());
+        let _ = f.flush();
+    }
+}
+
+macro_rules! linfo  { ($($a:tt)*) => { $crate::log::write("INFO",  &format!($($a)*)) } }
+macro_rules! lwarn  { ($($a:tt)*) => { $crate::log::write("WARN",  &format!($($a)*)) } }
+macro_rules! lerror { ($($a:tt)*) => { $crate::log::write("ERROR", &format!($($a)*)) } }
+/// Only emitted when `COTA_LOG=debug`; the argument expression is not even
+/// evaluated otherwise.
+macro_rules! ldebug {
+    ($($a:tt)*) => {
+        if $crate::log::debug_enabled() {
+            $crate::log::write("DEBUG", &format!($($a)*))
+        }
+    };
+}
+
+pub(crate) use {ldebug, lerror, linfo, lwarn};
+
+/// Open the log in whatever handles .log (Notepad by default). Exposed on the
+/// tray menu because the tray is the only surface this app has.
+pub fn reveal() {
+    if let Some(p) = path() {
+        crate::util::shell_open(&p.to_string_lossy());
+    }
+}

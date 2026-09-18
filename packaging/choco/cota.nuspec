@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>cota</id>
+    <version>0.1.0</version>
+    <packageSourceUrl>https://github.com/kidchenko/cota/tree/main/packaging/choco</packageSourceUrl>
+    <owners>kidchenko</owners>
+    <title>Cota</title>
+    <authors>kidchenko</authors>
+    <projectUrl>https://github.com/kidchenko/cota</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/kidchenko/cota/main/assets/icon-256.png</iconUrl>
+    <licenseUrl>https://github.com/kidchenko/cota/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/kidchenko/cota</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/kidchenko/cota/issues</bugTrackerUrl>
+    <tags>cota claude usage limits quota tray windows monitoring</tags>
+    <summary>Your Claude usage limits, in the Windows tray</summary>
+    <description><![CDATA[
+A ring in the notification area that fills as your Claude usage limits do, so
+you find out you are near the wall before you hit it rather than mid-task.
+
+Left-click for a panel with every bucket - session, weekly, per-model - the
+time until each resets, and an estimate of when the fullest one will fill at
+your current rate. Toasts at 50%, 80% and 95%.
+
+A single 1 MB executable with no runtime dependencies, sitting in the tray
+using about 5 MB and effectively no CPU.
+
+* Reads the token Claude Code already stores; never asks for a credential.
+* Talks to api.anthropic.com and nowhere else.
+* Projects when you will hit the cap from the slope of your own usage.
+* Attributes the week to projects, read from local transcripts.
+
+Requires Claude Code, signed in at least once on this machine.
+]]></description>
+    <releaseNotes>https://github.com/kidchenko/cota/releases</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

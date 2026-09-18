@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: kidchenko.Cota
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: kidchenko
+PublisherUrl: https://github.com/kidchenko
+PublisherSupportUrl: https://github.com/kidchenko/cota/issues
+PackageName: Cota
+PackageUrl: https://github.com/kidchenko/cota
+License: MIT
+LicenseUrl: https://github.com/kidchenko/cota/blob/main/LICENSE
+Copyright: Copyright (c) 2026 kidchenko
+ShortDescription: Your Claude usage limits, in the Windows tray
+Description: |-
+  A ring in the notification area that fills as your Claude usage limits do, so
+  you find out you are near the wall before you hit it rather than mid-task.
+
+  Left-click for a panel with every bucket - session, weekly, per-model - the
+  time until each resets, and an estimate of when the fullest one will fill at
+  your current rate. Toasts at 50%, 80% and 95%.
+
+  A single 1 MB executable with no runtime dependencies, sitting in the tray
+  using about 5 MB and effectively no CPU. It reads the token Claude Code
+  already stores, never asks for a credential of its own, and talks to
+  api.anthropic.com and nowhere else.
+
+  Requires Claude Code, signed in at least once on this machine.
+Moniker: cota
+Tags:
+  - claude
+  - usage
+  - quota
+  - monitoring
+  - tray
+  - utilities
+ReleaseNotesUrl: https://github.com/kidchenko/cota/releases
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

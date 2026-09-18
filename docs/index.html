@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cota — your Claude usage limits, in the Windows tray</title>
+<meta name="description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. A 1 MB tray app for Windows. Free and open source.">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+
+<meta property="og:title" content="Cota — your Claude usage limits, in the Windows tray">
+<meta property="og:description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall.">
+<meta property="og:image" content="https://josebarbosa.dev/cota/img/icon-256.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+
+<style>
+  /* Palette lifted from the app's own panel, so the site and the product read
+     as one thing. The severity colours are the same three constants the ring
+     and the bars are drawn with. */
+  :root {
+    --bg:        #0b0d14;
+    --raised:    #141824;
+    --line:      #222736;
+    --text:      #e9ecf4;
+    --dim:       #a2abc0;
+    --faint:     #6b7387;
+    --accent:    #3fb950;
+    --warn:      #d29922;
+    --crit:      #f85149;
+    --clay:      #d97757;
+    --radius:    14px;
+    --measure:   44rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.65 "Segoe UI Variable Text", "Segoe UI", system-ui,
+          -apple-system, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 24px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code {
+    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
+    font-size: .9em;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: .12em .4em;
+  }
+
+  /* ------------------------------------------------------------------ hero */
+  header { text-align: center; padding: 88px 0 12px; }
+  header img.mark { width: 132px; height: 132px; }
+
+  h1 {
+    font-size: clamp(2.6rem, 8vw, 3.9rem);
+    font-weight: 700;
+    letter-spacing: -.025em;
+    margin: 26px 0 0;
+    line-height: 1.05;
+  }
+
+  .tagline {
+    font-size: clamp(1.15rem, 3.6vw, 1.5rem);
+    color: var(--dim);
+    margin: 14px auto 0;
+    max-width: 32ch;
+  }
+
+  .cta { margin: 38px 0 0; }
+
+  .download {
+    display: inline-block;
+    background: var(--accent);
+    color: #07230e;
+    font-weight: 650;
+    font-size: 1.05rem;
+    padding: 14px 30px;
+    border-radius: 10px;
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .download:hover { text-decoration: none; filter: brightness(1.08); transform: translateY(-1px); }
+
+  .alt { margin: 18px 0 0; color: var(--faint); font-size: .95rem; }
+  .alt code { background: transparent; border: 0; color: var(--dim); padding: 0; }
+
+  .req { color: var(--faint); font-size: .88rem; margin: 26px 0 0; }
+
+  /* ----------------------------------------------------------------- shot */
+  .shot { margin: 40px auto 0; text-align: center; }
+
+  /* A stage rather than a bare image. The panel's own background is nearly as
+     dark as the page, so without a lit backdrop and a real shadow it reads as
+     a flat rectangle pasted on rather than a window floating above. */
+  .stage {
+    position: relative;
+    padding: 44px 20px 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(48% 42% at 50% 44%, rgba(210,153,34,.20), transparent 70%),
+      radial-gradient(62% 56% at 50% 52%, rgba(110,168,254,.07), transparent 72%);
+    pointer-events: none;
+  }
+  .stage img {
+    position: relative;
+    width: 310px;
+    max-width: 88vw;
+    height: auto;
+    /* The PNG carries its own rounded corners and transparent outside, drawn by
+       the app itself -- so the shadow has to follow the alpha, not the box.
+       box-shadow would trace a rectangle around the transparent corners. */
+    filter:
+      drop-shadow(0 2px 3px rgba(0,0,0,.45))
+      drop-shadow(0 16px 30px rgba(0,0,0,.5))
+      drop-shadow(0 38px 70px rgba(0,0,0,.4));
+  }
+  .shot figcaption {
+    color: var(--faint);
+    font-size: .88rem;
+    margin-top: 6px;
+  }
+
+  /* --------------------------------------------------------------- rings */
+  .rings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    text-align: center;
+  }
+  .rings img { width: 84px; height: 84px; }
+  .rings .pct {
+    display: block;
+    font-weight: 650;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    margin-top: 10px;
+  }
+  .rings .who { display: block; color: var(--faint); font-size: .85rem; margin-top: 2px; }
+
+  /* -------------------------------------------------------------- sections */
+  section { padding: 64px 0 0; }
+  h2 {
+    font-size: 1.5rem;
+    letter-spacing: -.01em;
+    margin: 0 0 18px;
+  }
+  h3 { font-size: 1.15rem; margin: 0 0 14px; }
+  p { margin: 0 0 16px; color: var(--dim); }
+  p.lead { color: var(--text); }
+
+  ul { margin: 0 0 16px; padding-left: 0; list-style: none; }
+  li { color: var(--dim); margin: 0 0 12px; padding-left: 26px; position: relative; }
+  li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: .62em;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .card {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+  }
+
+  details {
+    border-top: 1px solid var(--line);
+    padding: 18px 0;
+  }
+  details summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after {
+    content: "+";
+    color: var(--faint);
+    font-weight: 400;
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  details[open] summary::after { content: "\2212"; }
+  details p { margin: 14px 0 0; }
+  details p:last-child { margin-bottom: 0; }
+
+  footer {
+    margin-top: 84px;
+    padding: 34px 0 54px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: .9rem;
+    text-align: center;
+  }
+  footer a { color: var(--dim); }
+
+  @media (max-width: 520px) {
+    header { padding-top: 56px; }
+    /* Three rings side by side stop being legible well before the text does. */
+    .rings { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .rings img { width: 62px; height: 62px; }
+    .rings .who { font-size: .78rem; }
+    .stage { padding: 28px 0 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <img class="mark" src="img/icon.svg" alt="" width="132" height="132">
+    <h1>Cota</h1>
+    <p class="tagline">Your Claude usage limits, in the Windows tray</p>
+
+    <div class="cta">
+      <a class="download" href="https://github.com/kidchenko/cota/releases/latest">Download for Windows</a>
+      <p class="alt">or <code>winget install kidchenko.Cota</code> · <code>choco install cota</code></p>
+    </div>
+
+    <p class="req" id="req">Windows 10 or later · x64 · free and open source</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <figure class="shot">
+    <div class="stage">
+      <img src="img/panel.png" alt="The Cota panel: 88% weekly in amber with a progress bar, session at 46% and a per-model limit at 3% below it, then a projection reading &quot;At this rate: full in 3h 20m&quot;.">
+    </div>
+    <figcaption>Left-click the tray icon. Right-click for the menu.</figcaption>
+  </figure>
+
+  <section>
+    <p class="lead">Claude Code will tell you your limits when you ask it — <code>/usage</code>,
+    in a session you already have open. Cota is the same numbers when you
+    <em>didn't</em> ask.</p>
+
+    <p>A ring sits in the notification area and fills as your fullest limit does.
+    It goes amber at 75% and red at 90%, so "I have two days of weekly left" is
+    something you know rather than something you check — and finding out you are
+    nearly out stops being something that happens halfway through a refactor.</p>
+
+    <div class="card">
+      <div class="rings">
+        <figure>
+          <img src="img/ring-normal.png" alt="A green ring, half filled." width="84" height="84">
+          <span class="pct" style="color:var(--accent)">50%</span>
+          <span class="who">Plenty left</span>
+        </figure>
+        <figure>
+          <img src="img/ring-warning.png" alt="An amber ring, four fifths filled." width="84" height="84">
+          <span class="pct" style="color:var(--warn)">80%</span>
+          <span class="who">Be careful</span>
+        </figure>
+        <figure>
+          <img src="img/ring-critical.png" alt="A red ring, almost completely filled." width="84" height="84">
+          <span class="pct" style="color:var(--crit)">96%</span>
+          <span class="who">Wrap up</span>
+        </figure>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:.85rem;margin-top:14px">
+      Actual size in your taskbar: 16&nbsp;pixels. These are the same ring, drawn
+      larger by the same code.
+    </p>
+  </section>
+
+  <section>
+    <h3>What it does</h3>
+    <ul>
+      <li><strong>Every bucket.</strong> Session, weekly, and any per-model limit
+      your plan has, each with the time until it resets.</li>
+      <li><strong>Tells you when you will run out.</strong> <em>At this rate: full
+      in 3h 20m</em>, fitted from the slope of your own usage.</li>
+      <li><strong>Says where the week went.</strong> Which project ate it, read
+      from the transcripts already on your disk.</li>
+      <li><strong>Interrupts rarely.</strong> Toasts at 50%, 80% and 95%, once
+      each per limit per window — and when a limit you were actually near
+      resets.</li>
+      <li><strong>Costs nothing to run.</strong> One 1&nbsp;MB executable, no
+      runtime dependencies, about 5&nbsp;MB resident and no measurable CPU.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Privacy</h2>
+    <p>Cota reads the OAuth token Claude Code already stores on your machine and
+    sends it to <code>api.anthropic.com</code> — the service that issued it. That
+    is the only host it ever contacts. There is no account, no telemetry, and no
+    server of ours in the middle.</p>
+    <p>It never asks you for a credential of its own, and it does not cache or
+    refresh the token: Claude Code already does that, so Cota simply re-reads the
+    file each time.</p>
+    <p>TLS goes through the Windows certificate store rather than a bundled root
+    set, and the system proxy is respected — so it keeps working on a managed
+    machine where the proxy inspects traffic.</p>
+  </section>
+
+  <section>
+    <h2>Frequently asked questions</h2>
+
+    <details>
+      <summary>Do I need anything installed first?</summary>
+      <p>Claude Code, signed in at least once on this machine. Cota finds the
+      token it already stored. If you have never signed in, run <code>claude</code>
+      once and the tray icon picks it up on its next poll.</p>
+    </details>
+
+    <details>
+      <summary>Does this work with a Claude Pro or Max subscription?</summary>
+      <p>Yes — those are exactly the plans that have the limits this shows. The
+      panel names your plan at the top.</p>
+    </details>
+
+    <details>
+      <summary>How often does it check?</summary>
+      <p>Once a minute, and never twice within ten seconds however often you
+      click. Opening the panel does not check at all: it paints from the last
+      reading, so looking at it is free.</p>
+    </details>
+
+    <details>
+      <summary>Where does the "at this rate" estimate come from?</summary>
+      <p>From Cota's own samples of the reported percentage over time, fitted
+      with least squares.</p>
+      <p>It deliberately does <em>not</em> come from counting tokens in your
+      transcripts. Subscription buckets are opaque server-side counters — cache
+      reads, model tier and effort all weigh differently, and none of those
+      weights are published — so any local token total is a proxy whose error
+      cannot be bounded. Sampling the percentage sidesteps that entirely: the
+      slope is right regardless of how the weighting works.</p>
+    </details>
+
+    <details>
+      <summary>Is the "mostly: project" number exact?</summary>
+      <p>No, and it is labelled as an estimate. It weights tokens from your local
+      transcripts by the published Opus price ratios and reports a
+      <em>share between projects</em> — never a share of any limit. Treat it as
+      "where did the week go", not as a number that adds up to anything.</p>
+    </details>
+
+    <details>
+      <summary>Will it keep working?</summary>
+      <p>The endpoint it reads is the one Claude Code's own <code>/usage</code>
+      uses, and it is undocumented. It will change at some point.</p>
+      <p>Cota is written for that: every field is optional, unknown fields are
+      ignored, there is a fallback for the older response shape, and the server's
+      own severity grading is taken as a floor rather than gospel. When it does
+      break, the ring goes to a grey dashed circle and the menu says why, rather
+      than showing you a number that is quietly wrong.</p>
+    </details>
+
+    <details>
+      <summary>Why does SmartScreen warn about it?</summary>
+      <p>The binary is not code-signed. Click <strong>More info</strong>, then
+      <strong>Run anyway</strong>. The source is on GitHub if you would rather
+      build it yourself — it needs the Rust MSVC toolchain and nothing else.</p>
+    </details>
+
+    <details>
+      <summary>What does "Cota" mean?</summary>
+      <p>Quota, in Portuguese. It is a sibling to
+      <a href="https://github.com/kidchenko/windows-cantos">Cantos</a> —
+      <em>corner</em> — which does macOS-style hot corners for Windows.</p>
+    </details>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <p><a href="https://github.com/kidchenko/cota">Source on GitHub</a> ·
+       MIT licensed · by <a href="https://github.com/kidchenko">kidchenko</a></p>
+    <p>Not affiliated with Anthropic.</p>
+  </div>
+</footer>
+
+</body>
+</html>
