@@ -78,11 +78,20 @@ the toast, silently.
 
 ### macOS
 
-No published package yet — build `Cota.app` yourself (see [Build](#build)); a
-`./build.sh --dmg` build wraps it for handing around. It lives in the menu bar,
-with no Dock icon (`LSUIElement`). An unsigned download is quarantined by
-Gatekeeper: right-click it, choose **Open**, then **Open** again — or
-`xattr -dr com.apple.quarantine Cota.app`.
+Download [**Cota.dmg**](https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg)
+(Apple silicon), open it, and drag Cota into **Applications**. It lives in the
+menu bar, with no Dock icon (`LSUIElement`).
+
+The build is not notarized, so Gatekeeper blocks the first launch with a dialog
+that offers only *Done* — the old right-click-**Open** bypass is gone as of
+macOS Sequoia. Clear it once, either way:
+
+- **System Settings → Privacy & Security**, scroll down, **Open Anyway** next to
+  Cota (remembered, so it is a one-time step); or
+- `xattr -dr com.apple.quarantine /Applications/Cota.app`, then open it normally.
+
+Move it into Applications *first*: the quarantine flag cannot be cleared while
+the app is still on the read-only disk image.
 
 Notifications go through `osascript`, the same borrowed-identity trade Windows
 makes without the installer: the toast appears, but under the system script

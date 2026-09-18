@@ -270,7 +270,7 @@
       <a class="download ghost dl-mac" href="https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg">Download for macOS</a>
     </div>
     <p class="alt for-win">or <code>winget install kidchenko.Cota</code> · <code>choco install cota</code></p>
-    <p class="alt for-mac">Apple silicon · unsigned, so the first launch is right-click&nbsp;→&nbsp;<strong>Open</strong></p>
+    <p class="alt for-mac">Apple silicon · unsigned — first launch: <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Open&nbsp;Anyway</strong></p>
 
     <p class="req for-win">Windows 10 or later · x64 · free and open source<br>
       <a href="https://github.com/kidchenko/cota/releases">All releases</a> — portable build, checksums, notes</p>
@@ -419,10 +419,17 @@
 
     <details>
       <summary>Why does my computer warn about it the first time?</summary>
-      <p>The builds are not code-signed. On Windows, SmartScreen shows a notice —
-      click <strong>More info</strong>, then <strong>Run anyway</strong>. On
-      macOS, Gatekeeper blocks a first double-click — right-click the app, choose
-      <strong>Open</strong>, then <strong>Open</strong> again; once is enough.</p>
+      <p>The builds are not code-signed by a paid developer certificate, so each
+      OS asks once. On <strong>Windows</strong>, SmartScreen shows a notice —
+      click <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
+      <p>On <strong>macOS</strong>, drag Cota into <strong>Applications</strong>
+      first (Gatekeeper can't be cleared while it is still on the disk image).
+      Double-click it — macOS blocks it and offers only <em>Done</em> — then open
+      <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and
+      click <strong>Open Anyway</strong> next to Cota. That is remembered, so it
+      is a one-time step. If you prefer the terminal:
+      <code>xattr -dr com.apple.quarantine /Applications/Cota.app</code>, then
+      open it normally.</p>
       <p>The source is on GitHub if you would rather build it yourself: the Rust
       toolchain and nothing else — <code>build.ps1</code> on Windows,
       <code>build.sh</code> on macOS.</p>
