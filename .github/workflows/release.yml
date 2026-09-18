@@ -1,0 +1,88 @@
+name: release
+
+# One release, both packages. A pushed v* tag fans out to a macOS runner and a
+# Windows runner — each builds its own native package on its own OS, the thing
+# you cannot do by cross-compiling — and a final job bundles both into a single
+# GitHub Release. So every release carries Cota.dmg and Cota-Setup.exe without
+# anyone building on two machines by hand.
+#
+# Cut a release by pushing a tag:  git tag v0.1.0 && git push origin v0.1.0
+# Or run it from the Actions tab against a tag that already exists (the `tag`
+# input) — which is how the first release on this workflow gets made, since the
+# tag it targets predates the workflow file.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release (e.g. v0.0.2)"
+        required: true
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    runs-on: macos-latest # Apple silicon
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Ensure Rust toolchain
+        run: rustup default stable
+      - name: Build Cota.app + DMG
+        run: bash build.sh --dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Ensure Rust toolchain
+        run: rustup default stable
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Build installer + portable exe
+        shell: pwsh
+        run: .\build.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  release:
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          ls -l dist
+          # Idempotent: re-running a tag updates its assets rather than failing.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Cota ${TAG#v}" \
+              --verify-tag \
+              --generate-notes
+          fi
