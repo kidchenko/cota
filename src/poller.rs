@@ -42,6 +42,13 @@ const RATE_LIMIT_BACKOFF: Duration = Duration::from_secs(300);
 /// able to tell anyone anything new.
 const MIN_REQUEST_GAP: Duration = Duration::from_secs(10);
 
+/// After a poll fails on a dead network, retry on this shorter cadence rather
+/// than waiting the whole poll interval, so a reconnection is picked up within
+/// seconds instead of up to a minute later. Comfortably above
+/// `MIN_REQUEST_GAP`, and below the 20s floor on `poll_seconds`, so it is always
+/// the quicker of the two.
+const OFFLINE_RETRY_EVERY: Duration = Duration::from_secs(15);
+
 /// Whether a tick should actually go to the network.
 #[derive(PartialEq, Eq, Debug)]
 enum Decision {
@@ -69,6 +76,21 @@ fn decide(
         Decision::Cached
     } else {
         Decision::Skip
+    }
+}
+
+/// How long to sleep before the next tick. A rate-limit deadline wins — wake to
+/// resume rather than on the next whole minute after it. A dead network gets the
+/// short offline cadence, so a reconnection is caught in seconds. Otherwise the
+/// configured interval.
+///
+/// Pure for the same reason as [`decide`]: the reconnection lag it fixes is
+/// invisible in a running app until someone is stuck staring at a stale ring.
+fn next_wait(backoff_remaining: Option<Duration>, offline: bool, poll_seconds: u64) -> Duration {
+    match backoff_remaining {
+        Some(d) if !d.is_zero() => d,
+        _ if offline => OFFLINE_RETRY_EVERY,
+        _ => Duration::from_secs(poll_seconds),
     }
 }
 
@@ -120,6 +142,29 @@ mod throttle_tests {
             decide(LONG_AGO, Some(Duration::ZERO), false),
             Decision::Fetch
         );
+    }
+
+    #[test]
+    fn offline_polls_faster_so_reconnecting_is_noticed_quickly() {
+        // The bug this exists for: after a network drop the loop used to wait the
+        // full poll interval, so plugging back in left the ring stale for up to a
+        // minute. Offline must retry sooner — and sooner than any valid interval.
+        assert_eq!(next_wait(None, true, 60), OFFLINE_RETRY_EVERY);
+        assert!(OFFLINE_RETRY_EVERY < Duration::from_secs(20), "must beat the poll floor");
+    }
+
+    #[test]
+    fn a_healthy_poll_waits_the_configured_interval() {
+        assert_eq!(next_wait(None, false, 60), Duration::from_secs(60));
+    }
+
+    #[test]
+    fn a_rate_limit_backoff_outranks_the_offline_retry() {
+        // Being throttled must not be shortened by also being offline: the
+        // endpoint said no, and hammering it every 15s is exactly what the
+        // backoff exists to prevent.
+        let backoff = Duration::from_secs(200);
+        assert_eq!(next_wait(Some(backoff), true, 60), backoff);
     }
 }
 
@@ -176,6 +221,9 @@ impl Poller {
                 let mut cached: Option<Snapshot> = None;
                 let mut last_request: Option<Instant> = None;
                 let mut retry_after: Option<Instant> = None;
+                // Set when the last poll failed because the network was down, so
+                // the loop can wake sooner and catch the reconnection.
+                let mut offline = false;
 
                 loop {
                     let snapshot_cfg = cfg.lock().map(|c| c.clone()).unwrap_or_default();
@@ -202,17 +250,27 @@ impl Poller {
                                     Ok(snap) => {
                                         cached = Some(snap.clone());
                                         retry_after = None;
+                                        offline = false;
                                     }
                                     Err(FetchError::RateLimited) => {
                                         // A deadline, so the next Refresh cannot
                                         // walk it back.
                                         retry_after = Some(now + RATE_LIMIT_BACKOFF);
+                                        offline = false;
                                         lwarn!(
                                             "rate limited; not asking again for {}s",
                                             RATE_LIMIT_BACKOFF.as_secs()
                                         );
                                     }
-                                    Err(_) => {}
+                                    // A dead network: retry soon so reconnecting
+                                    // brings the numbers back promptly. Not a
+                                    // backoff — `retry_after` is left alone, so
+                                    // the shorter wait below still fetches.
+                                    Err(FetchError::Transport(_)) => offline = true,
+                                    // Token or schema errors persist until
+                                    // something changes elsewhere; polling faster
+                                    // would not fix them.
+                                    Err(_) => offline = false,
                                 }
                                 on_report(report);
                             }
@@ -227,13 +285,11 @@ impl Poller {
                     }
                     announce = false;
 
-                    // While backing off, wake at the deadline rather than the
-                    // poll interval, so service resumes promptly instead of on
-                    // the next whole minute after it.
-                    let wait = retry_after
-                        .map(|t| t.saturating_duration_since(Instant::now()))
-                        .filter(|d| !d.is_zero())
-                        .unwrap_or(Duration::from_secs(snapshot_cfg.poll_seconds));
+                    let wait = next_wait(
+                        retry_after.map(|t| t.saturating_duration_since(Instant::now())),
+                        offline,
+                        snapshot_cfg.poll_seconds,
+                    );
 
                     match rx.recv_timeout(wait) {
                         Ok(Cmd::Stop) => {

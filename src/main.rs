@@ -76,7 +76,17 @@ fn main() {
     };
 
     let cfg: poller::SharedConfig = Arc::new(Mutex::new(Config::load()));
-    let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+
+    #[allow(unused_mut)]
+    let mut event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    // Menu-bar agent, no Dock icon. `LSUIElement` in Info.plist sets this before
+    // launch, but tao resets the activation policy to Regular as it starts —
+    // which puts the ring in the Dock — so it must be asked for again here.
+    #[cfg(target_os = "macos")]
+    {
+        use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
+        event_loop.set_activation_policy(ActivationPolicy::Accessory);
+    }
     let proxy = event_loop.create_proxy();
 
     // Launching the app again is how a user asks "what is my usage right now"
