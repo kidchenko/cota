@@ -2,7 +2,8 @@
 #
 # Builds Cota.app for macOS. The counterpart to build.ps1.
 #
-#   ./build.sh                # test + release binary + Cota.app
+#   ./build.sh                # test + release binary + Cota.app (this Mac's arch)
+#   ./build.sh --universal    # ... as one arm64 + x86_64 binary
 #   ./build.sh --run          # ... then launch it in the menu bar
 #   ./build.sh --panel        # ... then show the panel for 20s (pinned)
 #   ./build.sh --shot         # ... then render docs/img/panel.png
@@ -15,7 +16,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-run=0; panel=0; shot=0; icons=0; dmg=0; skip_tests=0; skip_bundle=0
+run=0; panel=0; shot=0; icons=0; dmg=0; universal=0; skip_tests=0; skip_bundle=0
 theme=dark; scale=3
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -24,6 +25,7 @@ while [ $# -gt 0 ]; do
     --shot) shot=1 ;;
     --icons) icons=1 ;;
     --dmg) dmg=1 ;;
+    --universal) universal=1 ;;
     --skip-tests) skip_tests=1 ;;
     --skip-bundle) skip_bundle=1 ;;
     --theme) theme="$2"; shift ;;
@@ -58,8 +60,19 @@ if [ "$skip_tests" -eq 0 ]; then
 fi
 
 cyan 'Building release binary'
-"$cargo" build --release
-exe="target/release/cota"
+if [ "$universal" -eq 1 ]; then
+  rustup target add aarch64-apple-darwin x86_64-apple-darwin >/dev/null
+  "$cargo" build --release --target aarch64-apple-darwin
+  "$cargo" build --release --target x86_64-apple-darwin
+  mkdir -p target/universal
+  exe=target/universal/cota
+  lipo -create -output "$exe" \
+    target/aarch64-apple-darwin/release/cota target/x86_64-apple-darwin/release/cota
+  ok "universal: $(lipo -archs "$exe")"
+else
+  "$cargo" build --release
+  exe="target/release/cota"
+fi
 ok "$(printf 'cota   %.2f MB' "$(echo "scale=2; $(stat -f%z "$exe")/1048576" | bc)")"
 
 version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.toml | head -1)"

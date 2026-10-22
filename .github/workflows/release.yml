@@ -26,15 +26,15 @@ concurrency:
 
 jobs:
   macos:
-    runs-on: macos-latest # Apple silicon
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
       - name: Ensure Rust toolchain
         run: rustup default stable
-      - name: Build Cota.app + DMG
-        run: bash build.sh --dmg
+      - name: Build universal Cota.app + DMG
+        run: bash build.sh --universal --dmg
       - uses: actions/upload-artifact@v4
         with:
           name: macos
@@ -86,3 +86,16 @@ jobs:
               --verify-tag \
               --generate-notes
           fi
+
+  # Optional: only runs when the HOMEBREW_TAP_TOKEN secret is set (a token that
+  # can run workflows on kidchenko/homebrew-tap). Without it, the tap's daily
+  # bump picks the release up instead.
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - name: Bump the cask in kidchenko/homebrew-tap
+        if: env.GH_TOKEN != ''
+        run: gh workflow run bump.yml --repo kidchenko/homebrew-tap -f cask=cota

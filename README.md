@@ -58,11 +58,16 @@ installer creates one. A portable copy borrows PowerShell's identity instead.
 
 ### macOS
 
-Download [**Cota.dmg**](https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg)
+```bash
+brew install --cask kidchenko/tap/cota
+```
+
+Or download [**Cota.dmg**](https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg)
 (Apple silicon), open it, and drag Cota into **Applications**. It lives in the
 menu bar with no Dock icon.
 
-The build isn't notarized, so Gatekeeper blocks the first launch. Clear it once:
+The build isn't notarized, so Gatekeeper blocks the first launch (the cask
+clears this for you). Otherwise, clear it once:
 
 - **System Settings → Privacy & Security → Open Anyway** next to Cota; or
 - `xattr -dr com.apple.quarantine /Applications/Cota.app`
@@ -147,6 +152,7 @@ Set `COTA_LOG=debug` and the full response lands in `%APPDATA%\Cota\cota.log`.
 
 ```bash
 ./build.sh               # test + release binary + Cota.app
+./build.sh --universal   # ... as one arm64 + x86_64 binary
 ./build.sh --run         # ... then launch it in the menu bar
 ./build.sh --dmg         # ... wrap Cota.app in a .dmg
 ```
