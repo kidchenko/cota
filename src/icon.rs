@@ -19,9 +19,11 @@ const SS: u32 = 4;
 
 /// Ring geometry as fractions of the edge, so the same mark is drawn at the
 /// 16 pixels the taskbar paints and at whatever size the website wants. Tuned
-/// at tray size; everything else scales off it.
-const R_OUTER_F: f64 = 15.0 / 32.0;
-const R_INNER_F: f64 = 9.5 / 32.0;
+/// at tray size; everything else scales off it. 26 px across rather than edge
+/// to edge: the keyline Cota shares with Sua Vez, Café and Porta so the four
+/// sit the same size in the menu bar.
+const R_OUTER_F: f64 = 13.0 / 32.0;
+const R_INNER_F: f64 = 8.5 / 32.0;
 
 type Rgba = [f64; 4];
 
@@ -248,9 +250,9 @@ mod tests {
         // quarter, where which side of it a given pixel centre falls is a
         // rounding detail rather than the behaviour under test.
         let b = render(Face::Meter { percent: 30.0, severity: Severity::Normal }, true);
-        let top = pixel(&b, EDGE / 2, 1);
-        let right = pixel(&b, EDGE - 2, EDGE / 2);
-        let bottom = pixel(&b, EDGE / 2, EDGE - 2);
+        let top = pixel(&b, EDGE / 2, 5);
+        let right = pixel(&b, EDGE - 6, EDGE / 2);
+        let bottom = pixel(&b, EDGE / 2, EDGE - 6);
 
         let greenish = |p: [u8; 4]| p[1] > p[0] && p[1] > p[2];
         assert!(greenish(top), "twelve o'clock should be filled, got {top:?}");
@@ -261,7 +263,7 @@ mod tests {
     #[test]
     fn severity_picks_the_colour() {
         let red = render(Face::Meter { percent: 99.0, severity: Severity::Critical }, true);
-        let p = pixel(&red, EDGE / 2, 1);
+        let p = pixel(&red, EDGE / 2, 5);
         assert!(p[0] > p[1] && p[0] > p[2], "critical should be red, got {p:?}");
     }
 
@@ -270,13 +272,13 @@ mod tests {
         let on_dark = render(Face::Meter { percent: 0.0, severity: Severity::Normal }, true);
         let on_light = render(Face::Meter { percent: 0.0, severity: Severity::Normal }, false);
         // Bottom of the ring is track in both; it must not be the same colour.
-        assert_ne!(pixel(&on_dark, EDGE / 2, EDGE - 2), pixel(&on_light, EDGE / 2, EDGE - 2));
+        assert_ne!(pixel(&on_dark, EDGE / 2, EDGE - 6), pixel(&on_light, EDGE / 2, EDGE - 6));
     }
 
     #[test]
     fn unknown_is_dashed_so_it_is_not_just_a_colour_difference() {
         let b = render(Face::Unknown, true);
-        let ring: Vec<u8> = (0..EDGE).map(|x| pixel(&b, x, 1)[3]).collect();
+        let ring: Vec<u8> = (0..EDGE).map(|x| pixel(&b, x, 5)[3]).collect();
         assert!(ring.iter().any(|&a| a > 0), "some of the ring should be drawn");
         assert!(ring.iter().any(|&a| a == 0), "and some of it should be gap");
     }
