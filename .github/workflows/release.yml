@@ -171,4 +171,11 @@ jobs:
     steps:
       - name: Bump the cask in kidchenko/homebrew-tap
         if: env.GH_TOKEN != ''
-        run: gh workflow run bump.yml --repo kidchenko/homebrew-tap -f cask=cota
+        run: |
+          # A new app's first release comes before its cask, which the tap's CI
+          # can only install once there is a release to download.
+          if ! gh api repos/kidchenko/homebrew-tap/contents/Casks/cota.rb --silent 2>/dev/null; then
+            echo "::notice::kidchenko/homebrew-tap has no cota cask yet; add it, then the daily bump keeps it current"
+            exit 0
+          fi
+          gh workflow run bump.yml --repo kidchenko/homebrew-tap -f cask=cota
