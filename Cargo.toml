@@ -2,7 +2,7 @@
 name         = "cota"
 version      = "0.0.3"
 edition      = "2021"
-rust-version = "1.77"
+rust-version = "1.90"
 description  = "Your Claude usage limits, in the Windows tray"
 authors      = ["kidchenko <kidchenko@gmail.com>"]
 license      = "MIT"

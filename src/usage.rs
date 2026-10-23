@@ -119,7 +119,6 @@ impl Snapshot {
             .iter()
             .max_by(|a, b| a.percent.total_cmp(&b.percent))
     }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -475,10 +474,16 @@ mod tests {
     fn severity_never_softens_what_the_number_says() {
         // The server calling 96% "normal" must not produce a green icon.
         let body = r#"{"limits":[{"kind":"weekly_all","percent":96,"severity":"normal"}]}"#;
-        assert_eq!(parse(body).unwrap().headline().unwrap().severity, Severity::Critical);
+        assert_eq!(
+            parse(body).unwrap().headline().unwrap().severity,
+            Severity::Critical
+        );
         // ...and a server that grades harder than the number still wins.
         let body = r#"{"limits":[{"kind":"weekly_all","percent":5,"severity":"critical"}]}"#;
-        assert_eq!(parse(body).unwrap().headline().unwrap().severity, Severity::Critical);
+        assert_eq!(
+            parse(body).unwrap().headline().unwrap().severity,
+            Severity::Critical
+        );
     }
 
     #[test]

@@ -64,8 +64,7 @@ impl Config {
 
     #[cfg(target_os = "macos")]
     pub fn dir() -> Option<PathBuf> {
-        std::env::var_os("HOME")
-            .map(|h| PathBuf::from(h).join("Library/Application Support/Cota"))
+        std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support/Cota"))
     }
 
     pub fn path() -> Option<PathBuf> {

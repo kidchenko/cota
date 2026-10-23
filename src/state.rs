@@ -364,7 +364,10 @@ mod tests {
     #[test]
     fn a_reset_from_nowhere_near_the_cap_is_not_worth_saying() {
         // The session bucket rolls over every few hours all day long.
-        let r = Rollover { label: "Session".into(), was_at: 9.0 };
+        let r = Rollover {
+            label: "Session".into(),
+            was_at: 9.0,
+        };
         assert!(!r.worth_saying());
     }
 
@@ -427,7 +430,10 @@ mod tests {
         assert!(s.newly_crossed("Weekly", 84.0, &[50, 80, 95]).is_empty());
         assert_eq!(s.newly_crossed("Weekly", 96.0, &[50, 80, 95]), vec![95]);
         // A different limit keeps its own tally.
-        assert_eq!(s.newly_crossed("Session", 82.0, &[50, 80, 95]), vec![50, 80]);
+        assert_eq!(
+            s.newly_crossed("Session", 82.0, &[50, 80, 95]),
+            vec![50, 80]
+        );
     }
 
     #[test]

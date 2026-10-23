@@ -393,7 +393,15 @@ fn draw_panel(model: &PanelModel, dark: bool, pixel_scale: f64) {
             Align::Left,
             false,
         );
-        bar(left, right, hero.bar_y as f64, HERO_BAR_H as f64, row.percent, sev, pal.track);
+        bar(
+            left,
+            right,
+            hero.bar_y as f64,
+            HERO_BAR_H as f64,
+            row.percent,
+            sev,
+            pal.track,
+        );
         let fs = sysfont(12.0, 0.0);
         sub_line(row, left, right, hero.sub_baseline as f64, &fs, &pal, sev);
     }
@@ -405,7 +413,7 @@ fn draw_panel(model: &PanelModel, dark: bool, pixel_scale: f64) {
             rule(left, right, y as f64, pal.rule);
         }
     }
-    for (box_, row) in l.rows.iter().zip(model.rest().into_iter()) {
+    for (box_, row) in l.rows.iter().zip(model.rest()) {
         let sev = severity_rgb(row.severity);
         let f = sysfont(13.0, 0.3);
         draw_text(
@@ -420,7 +428,15 @@ fn draw_panel(model: &PanelModel, dark: bool, pixel_scale: f64) {
         );
         let fs = sysfont(12.0, 0.0);
         sub_line(row, left, right, box_.baseline as f64, &fs, &pal, sev);
-        bar(left, right, box_.bar_y as f64, ROW_BAR_H as f64, row.percent, sev, pal.track);
+        bar(
+            left,
+            right,
+            box_.bar_y as f64,
+            ROW_BAR_H as f64,
+            row.percent,
+            sev,
+            pal.track,
+        );
     }
 
     // -- notes ------------------------------------------------------------
@@ -445,7 +461,16 @@ fn draw_panel(model: &PanelModel, dark: bool, pixel_scale: f64) {
             let cy = baseline as f64 - asc / 2.0 + 1.0;
             dot(left + DOT as f64 / 2.0, cy, DOT as f64, dot_rgb);
             let x = left + DOT as f64 + 10.0;
-            draw_text(note, x, baseline as f64, right - x, &f, ink, Align::Left, true);
+            draw_text(
+                note,
+                x,
+                baseline as f64,
+                right - x,
+                &f,
+                ink,
+                Align::Left,
+                true,
+            );
         }
     }
 }
@@ -461,7 +486,16 @@ fn sub_line(
     pal: &Palette,
     accent: Rgb,
 ) {
-    draw_text(&row.label, left, baseline, right - left, font, pal.secondary, Align::Left, false);
+    draw_text(
+        &row.label,
+        left,
+        baseline,
+        right - left,
+        font,
+        pal.secondary,
+        Align::Left,
+        false,
+    );
 
     let mut x = left + text_width(&row.label, font);
     if row.active {
@@ -477,11 +511,23 @@ fn sub_line(
     } else {
         format!("  \u{00b7}  {}", row.resets)
     };
-    draw_text(&tail, x, baseline, right - x, font, pal.tertiary, Align::Left, true);
+    draw_text(
+        &tail,
+        x,
+        baseline,
+        right - x,
+        font,
+        pal.tertiary,
+        Align::Left,
+        true,
+    );
 }
 
 fn rule(left: f64, right: f64, y: f64, rgb: Rgb) {
-    fill_rect(NSRect::new(NSPoint::new(left, y), NSSize::new(right - left, 1.0)), rgb);
+    fill_rect(
+        NSRect::new(NSPoint::new(left, y), NSSize::new(right - left, 1.0)),
+        rgb,
+    );
 }
 
 /// Track plus fill. The fill is floored at its own height so a 1% reading is a
@@ -493,7 +539,11 @@ fn bar(left: f64, right: f64, y: f64, h: f64, percent: f64, fill: Rgb, track: Rg
     let filled = (percent / 100.0).clamp(0.0, 1.0) * width;
     if filled > 0.0 {
         let filled = filled.max(h);
-        fill_rounded(NSRect::new(NSPoint::new(left, y), NSSize::new(filled, h)), h / 2.0, fill);
+        fill_rounded(
+            NSRect::new(NSPoint::new(left, y), NSSize::new(filled, h)),
+            h / 2.0,
+            fill,
+        );
     }
 }
 
@@ -502,20 +552,19 @@ fn dot(cx: f64, cy: f64, d: f64, rgb: Rgb) {
     let rect = NSRect::new(NSPoint::new(cx - r, cy - r), NSSize::new(d, d));
     let path = NSBezierPath::bezierPathWithOvalInRect(rect);
     color(rgb).setFill();
-    { path.fill() };
+    path.fill();
 }
 
 fn fill_rect(rect: NSRect, rgb: Rgb) {
     let path = NSBezierPath::bezierPathWithRect(rect);
     color(rgb).setFill();
-    { path.fill() };
+    path.fill();
 }
 
 fn fill_rounded(rect: NSRect, radius: f64, rgb: Rgb) {
-    let path =
-        { NSBezierPath::bezierPathWithRoundedRect_xRadius_yRadius(rect, radius, radius) };
+    let path = NSBezierPath::bezierPathWithRoundedRect_xRadius_yRadius(rect, radius, radius);
     color(rgb).setFill();
-    { path.fill() };
+    path.fill();
 }
 
 fn draw_mark(pixel_scale: f64, x: f64, top: f64) {
@@ -561,7 +610,12 @@ fn sysfont(size: f64, weight: f64) -> Retained<NSFont> {
 /// The attribute dictionary a draw/measure call wants. Built with raw
 /// `msg_send!` to sidestep the generic `NSCopying` key typing, which is a lot of
 /// ceremony for three fixed keys.
-fn text_attrs(font: &NSFont, rgb: Rgb, align: Align, truncate: bool) -> Retained<NSMutableDictionary> {
+fn text_attrs(
+    font: &NSFont,
+    rgb: Rgb,
+    align: Align,
+    truncate: bool,
+) -> Retained<NSMutableDictionary> {
     let para = NSMutableParagraphStyle::new();
     para.setAlignment(match align {
         Align::Left => NSTextAlignment::Left,
@@ -605,9 +659,9 @@ fn draw_text(
     let attrs = text_attrs(font, rgb, align, truncate);
     let ascent = font.ascender();
     let descent = font.descender(); // negative
-    // With the rect top at baseline - ascent, drawInRect lays the single line so
-    // its baseline lands exactly on `baseline`; the width carries alignment and
-    // tail-truncation.
+                                    // With the rect top at baseline - ascent, drawInRect lays the single line so
+                                    // its baseline lands exactly on `baseline`; the width carries alignment and
+                                    // tail-truncation.
     let rect = NSRect::new(
         NSPoint::new(x, baseline - ascent),
         NSSize::new(width.max(0.0), ascent - descent + 2.0),
@@ -807,15 +861,25 @@ mod tests {
         let visible = vis(0.0, 0.0, 1440.0, 875.0);
         let origin = place(NSPoint::new(1200.0, 880.0), 300.0, 400.0, visible);
         let top = origin.y + 400.0;
-        assert!(top <= 875.0, "panel top {top} pokes above the visible frame");
-        assert!(top >= 875.0 - 20.0, "panel should hang near the top, got {top}");
+        assert!(
+            top <= 875.0,
+            "panel top {top} pokes above the visible frame"
+        );
+        assert!(
+            top >= 875.0 - 20.0,
+            "panel should hang near the top, got {top}"
+        );
     }
 
     #[test]
     fn the_panel_stays_inside_the_visible_frame() {
         let visible = vis(0.0, 0.0, 1440.0, 875.0);
         let origin = place(NSPoint::new(1439.0, 880.0), 300.0, 400.0, visible);
-        assert!(origin.x >= 0.0 && origin.x + 300.0 <= 1440.0, "x={}", origin.x);
+        assert!(
+            origin.x >= 0.0 && origin.x + 300.0 <= 1440.0,
+            "x={}",
+            origin.x
+        );
         assert!(origin.y >= 0.0, "y={}", origin.y);
     }
 
@@ -824,6 +888,10 @@ mod tests {
         // A display to the left of the primary: coordinates go negative.
         let visible = vis(-1440.0, 0.0, 1440.0, 875.0);
         let origin = place(NSPoint::new(-700.0, 880.0), 300.0, 400.0, visible);
-        assert!(origin.x >= -1440.0 && origin.x + 300.0 <= 0.0, "x={}", origin.x);
+        assert!(
+            origin.x >= -1440.0 && origin.x + 300.0 <= 0.0,
+            "x={}",
+            origin.x
+        );
     }
 }

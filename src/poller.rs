@@ -97,75 +97,10 @@ fn next_wait(backoff_remaining: Option<Duration>, offline: bool, poll_seconds: u
 pub enum Cmd {
     /// Poll now. `announce` marks a refresh the user asked for out loud —
     /// from the tray menu or by relaunching the exe — which gets a toast.
-    Refresh { announce: bool },
+    Refresh {
+        announce: bool,
+    },
     Stop,
-}
-
-#[cfg(test)]
-mod throttle_tests {
-    use super::*;
-
-    const LONG_AGO: Option<Duration> = Some(Duration::from_secs(600));
-    const JUST_NOW: Option<Duration> = Some(Duration::from_secs(2));
-
-    #[test]
-    fn the_first_request_always_goes() {
-        assert_eq!(decide(None, None, false), Decision::Fetch);
-        assert_eq!(decide(None, None, true), Decision::Fetch);
-    }
-
-    #[test]
-    fn a_normal_tick_fetches() {
-        assert_eq!(decide(LONG_AGO, None, false), Decision::Fetch);
-    }
-
-    #[test]
-    fn clicking_twice_in_a_second_only_asks_once() {
-        // The bug this exists for: the tray used to fire a request per click,
-        // and a handful of clicks was enough to get rate-limited.
-        assert_eq!(decide(JUST_NOW, None, true), Decision::Cached);
-        assert_eq!(decide(JUST_NOW, None, false), Decision::Skip);
-    }
-
-    #[test]
-    fn a_refresh_cannot_shorten_the_backoff() {
-        // The other half of the bug: a refresh used to reset the backoff, so a
-        // rate-limited app retried on every click and never recovered.
-        let backoff = Some(Duration::from_secs(120));
-        assert_eq!(decide(LONG_AGO, backoff, true), Decision::Cached);
-        assert_eq!(decide(LONG_AGO, backoff, false), Decision::Skip);
-    }
-
-    #[test]
-    fn service_resumes_when_the_backoff_runs_out() {
-        assert_eq!(
-            decide(LONG_AGO, Some(Duration::ZERO), false),
-            Decision::Fetch
-        );
-    }
-
-    #[test]
-    fn offline_polls_faster_so_reconnecting_is_noticed_quickly() {
-        // The bug this exists for: after a network drop the loop used to wait the
-        // full poll interval, so plugging back in left the ring stale for up to a
-        // minute. Offline must retry sooner — and sooner than any valid interval.
-        assert_eq!(next_wait(None, true, 60), OFFLINE_RETRY_EVERY);
-        assert!(OFFLINE_RETRY_EVERY < Duration::from_secs(20), "must beat the poll floor");
-    }
-
-    #[test]
-    fn a_healthy_poll_waits_the_configured_interval() {
-        assert_eq!(next_wait(None, false, 60), Duration::from_secs(60));
-    }
-
-    #[test]
-    fn a_rate_limit_backoff_outranks_the_offline_retry() {
-        // Being throttled must not be shortened by also being offline: the
-        // endpoint said no, and hammering it every 15s is exactly what the
-        // backoff exists to prevent.
-        let backoff = Duration::from_secs(200);
-        assert_eq!(next_wait(Some(backoff), true, 60), backoff);
-    }
 }
 
 /// One limit crossing one threshold, ready to be said out loud.
@@ -421,5 +356,75 @@ fn poll_once(
         rollovers,
         announce,
         stale_for: None,
+    }
+}
+
+#[cfg(test)]
+mod throttle_tests {
+    use super::*;
+
+    const LONG_AGO: Option<Duration> = Some(Duration::from_secs(600));
+    const JUST_NOW: Option<Duration> = Some(Duration::from_secs(2));
+
+    #[test]
+    fn the_first_request_always_goes() {
+        assert_eq!(decide(None, None, false), Decision::Fetch);
+        assert_eq!(decide(None, None, true), Decision::Fetch);
+    }
+
+    #[test]
+    fn a_normal_tick_fetches() {
+        assert_eq!(decide(LONG_AGO, None, false), Decision::Fetch);
+    }
+
+    #[test]
+    fn clicking_twice_in_a_second_only_asks_once() {
+        // The bug this exists for: the tray used to fire a request per click,
+        // and a handful of clicks was enough to get rate-limited.
+        assert_eq!(decide(JUST_NOW, None, true), Decision::Cached);
+        assert_eq!(decide(JUST_NOW, None, false), Decision::Skip);
+    }
+
+    #[test]
+    fn a_refresh_cannot_shorten_the_backoff() {
+        // The other half of the bug: a refresh used to reset the backoff, so a
+        // rate-limited app retried on every click and never recovered.
+        let backoff = Some(Duration::from_secs(120));
+        assert_eq!(decide(LONG_AGO, backoff, true), Decision::Cached);
+        assert_eq!(decide(LONG_AGO, backoff, false), Decision::Skip);
+    }
+
+    #[test]
+    fn service_resumes_when_the_backoff_runs_out() {
+        assert_eq!(
+            decide(LONG_AGO, Some(Duration::ZERO), false),
+            Decision::Fetch
+        );
+    }
+
+    #[test]
+    fn offline_polls_faster_so_reconnecting_is_noticed_quickly() {
+        // The bug this exists for: after a network drop the loop used to wait the
+        // full poll interval, so plugging back in left the ring stale for up to a
+        // minute. Offline must retry sooner — and sooner than any valid interval.
+        assert_eq!(next_wait(None, true, 60), OFFLINE_RETRY_EVERY);
+        assert!(
+            OFFLINE_RETRY_EVERY < Duration::from_secs(20),
+            "must beat the poll floor"
+        );
+    }
+
+    #[test]
+    fn a_healthy_poll_waits_the_configured_interval() {
+        assert_eq!(next_wait(None, false, 60), Duration::from_secs(60));
+    }
+
+    #[test]
+    fn a_rate_limit_backoff_outranks_the_offline_retry() {
+        // Being throttled must not be shortened by also being offline: the
+        // endpoint said no, and hammering it every 15s is exactly what the
+        // backoff exists to prevent.
+        let backoff = Duration::from_secs(200);
+        assert_eq!(next_wait(Some(backoff), true, 60), backoff);
     }
 }

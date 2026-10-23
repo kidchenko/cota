@@ -71,7 +71,10 @@ mod imp {
             return if rc == ERROR_SUCCESS || rc.0 == 2 {
                 Ok(())
             } else {
-                Err(format!("could not remove the autostart entry (error {})", rc.0))
+                Err(format!(
+                    "could not remove the autostart entry (error {})",
+                    rc.0
+                ))
             };
         }
 
@@ -86,7 +89,10 @@ mod imp {
         if rc == ERROR_SUCCESS {
             Ok(())
         } else {
-            Err(format!("could not write the autostart entry (error {})", rc.0))
+            Err(format!(
+                "could not write the autostart entry (error {})",
+                rc.0
+            ))
         }
     }
 }
@@ -101,8 +107,11 @@ mod imp {
     const LABEL: &str = "com.kidchenko.cota";
 
     fn plist_path() -> Option<PathBuf> {
-        std::env::var_os("HOME")
-            .map(|h| PathBuf::from(h).join("Library/LaunchAgents").join(format!("{LABEL}.plist")))
+        std::env::var_os("HOME").map(|h| {
+            PathBuf::from(h)
+                .join("Library/LaunchAgents")
+                .join(format!("{LABEL}.plist"))
+        })
     }
 
     /// Presence of the plist is the switch. As on Windows, we do not verify the

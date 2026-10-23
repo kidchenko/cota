@@ -38,7 +38,10 @@ const MUTED: Rgba = [0x8b as f64, 0x94 as f64, 0x9e as f64, 255.0];
 /// What the icon should say right now.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Face {
-    Meter { percent: f64, severity: Severity },
+    Meter {
+        percent: f64,
+        severity: Severity,
+    },
     /// Polling is switched off.
     Paused,
     /// We have no number: not signed in, offline, token rejected, schema moved.
@@ -233,14 +236,30 @@ mod tests {
 
     #[test]
     fn output_is_the_right_size() {
-        let b = render(Face::Meter { percent: 50.0, severity: Severity::Normal }, true);
+        let b = render(
+            Face::Meter {
+                percent: 50.0,
+                severity: Severity::Normal,
+            },
+            true,
+        );
         assert_eq!(b.len() as u32, EDGE * EDGE * 4);
     }
 
     #[test]
     fn the_middle_is_transparent() {
-        let b = render(Face::Meter { percent: 100.0, severity: Severity::Critical }, true);
-        assert_eq!(pixel(&b, EDGE / 2, EDGE / 2)[3], 0, "the hole must stay a hole");
+        let b = render(
+            Face::Meter {
+                percent: 100.0,
+                severity: Severity::Critical,
+            },
+            true,
+        );
+        assert_eq!(
+            pixel(&b, EDGE / 2, EDGE / 2)[3],
+            0,
+            "the hole must stay a hole"
+        );
         assert_eq!(pixel(&b, 0, 0)[3], 0, "corners are outside the ring");
     }
 
@@ -249,37 +268,79 @@ mod tests {
         // 30% rather than 25%: three o'clock sits exactly on the boundary at a
         // quarter, where which side of it a given pixel centre falls is a
         // rounding detail rather than the behaviour under test.
-        let b = render(Face::Meter { percent: 30.0, severity: Severity::Normal }, true);
+        let b = render(
+            Face::Meter {
+                percent: 30.0,
+                severity: Severity::Normal,
+            },
+            true,
+        );
         let top = pixel(&b, EDGE / 2, 5);
         let right = pixel(&b, EDGE - 6, EDGE / 2);
         let bottom = pixel(&b, EDGE / 2, EDGE - 6);
 
         let greenish = |p: [u8; 4]| p[1] > p[0] && p[1] > p[2];
-        assert!(greenish(top), "twelve o'clock should be filled, got {top:?}");
-        assert!(greenish(right), "three o'clock should be filled, got {right:?}");
-        assert!(!greenish(bottom), "six o'clock should be track, got {bottom:?}");
+        assert!(
+            greenish(top),
+            "twelve o'clock should be filled, got {top:?}"
+        );
+        assert!(
+            greenish(right),
+            "three o'clock should be filled, got {right:?}"
+        );
+        assert!(
+            !greenish(bottom),
+            "six o'clock should be track, got {bottom:?}"
+        );
     }
 
     #[test]
     fn severity_picks_the_colour() {
-        let red = render(Face::Meter { percent: 99.0, severity: Severity::Critical }, true);
+        let red = render(
+            Face::Meter {
+                percent: 99.0,
+                severity: Severity::Critical,
+            },
+            true,
+        );
         let p = pixel(&red, EDGE / 2, 5);
-        assert!(p[0] > p[1] && p[0] > p[2], "critical should be red, got {p:?}");
+        assert!(
+            p[0] > p[1] && p[0] > p[2],
+            "critical should be red, got {p:?}"
+        );
     }
 
     #[test]
     fn the_track_follows_the_taskbar_theme() {
-        let on_dark = render(Face::Meter { percent: 0.0, severity: Severity::Normal }, true);
-        let on_light = render(Face::Meter { percent: 0.0, severity: Severity::Normal }, false);
+        let on_dark = render(
+            Face::Meter {
+                percent: 0.0,
+                severity: Severity::Normal,
+            },
+            true,
+        );
+        let on_light = render(
+            Face::Meter {
+                percent: 0.0,
+                severity: Severity::Normal,
+            },
+            false,
+        );
         // Bottom of the ring is track in both; it must not be the same colour.
-        assert_ne!(pixel(&on_dark, EDGE / 2, EDGE - 6), pixel(&on_light, EDGE / 2, EDGE - 6));
+        assert_ne!(
+            pixel(&on_dark, EDGE / 2, EDGE - 6),
+            pixel(&on_light, EDGE / 2, EDGE - 6)
+        );
     }
 
     #[test]
     fn unknown_is_dashed_so_it_is_not_just_a_colour_difference() {
         let b = render(Face::Unknown, true);
         let ring: Vec<u8> = (0..EDGE).map(|x| pixel(&b, x, 5)[3]).collect();
-        assert!(ring.iter().any(|&a| a > 0), "some of the ring should be drawn");
-        assert!(ring.iter().any(|&a| a == 0), "and some of it should be gap");
+        assert!(
+            ring.iter().any(|&a| a > 0),
+            "some of the ring should be drawn"
+        );
+        assert!(ring.contains(&0), "and some of it should be gap");
     }
 }

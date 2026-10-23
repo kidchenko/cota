@@ -35,8 +35,7 @@ pub fn parse_rfc3339(s: &str) -> Option<u64> {
     // regex crate.
     let mut rest = &s[19..];
     if rest.starts_with('.') {
-        let digits = rest[1..]
-            .as_bytes()
+        let digits = rest.as_bytes()[1..]
             .iter()
             .take_while(|c| c.is_ascii_digit())
             .count();
@@ -61,8 +60,8 @@ pub fn parse_rfc3339(s: &str) -> Option<u64> {
         sign * (oh * 3600 + om * 60)
     };
 
-    let epoch = days_from_civil(year, month, day) * 86_400 + hour * 3600 + min * 60 + sec
-        - offset_secs;
+    let epoch =
+        days_from_civil(year, month, day) * 86_400 + hour * 3600 + min * 60 + sec - offset_secs;
     (epoch >= 0).then_some(epoch as u64)
 }
 

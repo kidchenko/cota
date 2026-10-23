@@ -90,7 +90,9 @@ mod imp {
     /// Hand a path (or URL) to `open(1)`, which routes it to whatever the user
     /// has associated with it — Finder for a folder, Console for the log.
     pub fn shell_open(target: &str) {
-        let _ = std::process::Command::new("/usr/bin/open").arg(target).spawn();
+        let _ = std::process::Command::new("/usr/bin/open")
+            .arg(target)
+            .spawn();
     }
 
     /// The point size the Claude mark is rendered at for the status menu.

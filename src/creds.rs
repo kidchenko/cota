@@ -138,7 +138,12 @@ fn credentials_file_text() -> Result<String, CredsError> {
 #[cfg(target_os = "macos")]
 fn keychain_credentials() -> Option<String> {
     let out = std::process::Command::new("/usr/bin/security")
-        .args(["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+        .args([
+            "find-generic-password",
+            "-s",
+            "Claude Code-credentials",
+            "-w",
+        ])
         .output()
         .ok()?;
     if !out.status.success() {

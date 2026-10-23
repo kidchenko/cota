@@ -556,7 +556,7 @@ fn draw(hdc: HDC, rc: RECT) {
                     rule(hdc, left, right, y, p.rule);
                 }
             }
-            for (box_, row) in l.rows.iter().zip(model.rest().into_iter()) {
+            for (box_, row) in l.rows.iter().zip(model.rest()) {
                 let colour = severity_colour(row.severity);
 
                 let f = font(scale(13), 600);
@@ -671,7 +671,13 @@ fn sub_line(
         unsafe {
             let _ = GetTextMetricsW(hdc, &mut tm);
         }
-        dot(hdc, x + gap, baseline - tm.tmAscent / 2 + nudge, dot_size, accent);
+        dot(
+            hdc,
+            x + gap,
+            baseline - tm.tmAscent / 2 + nudge,
+            dot_size,
+            accent,
+        );
         x += gap * 2;
     }
 
@@ -736,14 +742,7 @@ fn bar(
 }
 
 /// Draw a single line sitting on `baseline`.
-fn text_baseline(
-    hdc: HDC,
-    s: &str,
-    left: i32,
-    right: i32,
-    baseline: i32,
-    align: DRAW_TEXT_FORMAT,
-) {
+fn text_baseline(hdc: HDC, s: &str, left: i32, right: i32, baseline: i32, align: DRAW_TEXT_FORMAT) {
     let mut tm = TEXTMETRICW::default();
     unsafe {
         let _ = GetTextMetricsW(hdc, &mut tm);
@@ -799,7 +798,15 @@ fn rounded(hdc: HDC, r: RECT, diameter: i32, colour: COLORREF) {
         let pen = SelectObject(hdc, GetStockObject(NULL_PEN));
         // RoundRect's right/bottom are exclusive; without the +1 the bar is a
         // pixel short at every size.
-        let _ = RoundRect(hdc, r.left, r.top, r.right + 1, r.bottom + 1, diameter, diameter);
+        let _ = RoundRect(
+            hdc,
+            r.left,
+            r.top,
+            r.right + 1,
+            r.bottom + 1,
+            diameter,
+            diameter,
+        );
         SelectObject(hdc, pen);
         SelectObject(hdc, old_brush);
     }
@@ -807,11 +814,7 @@ fn rounded(hdc: HDC, r: RECT, diameter: i32, colour: COLORREF) {
 
 /// Draw the Claude mark, compositing its alpha against the panel background.
 fn blit_mark(hdc: HDC, rgba: &[u8], edge: u32, x: i32, y: i32, bg: COLORREF) {
-    let (br, bg_, bb) = (
-        (bg.0 & 0xff) as u32,
-        ((bg.0 >> 8) & 0xff) as u32,
-        ((bg.0 >> 16) & 0xff) as u32,
-    );
+    let (br, bg_, bb) = (bg.0 & 0xff, (bg.0 >> 8) & 0xff, (bg.0 >> 16) & 0xff);
     for py in 0..edge {
         for px in 0..edge {
             let i = ((py * edge + px) * 4) as usize;
@@ -976,7 +979,12 @@ mod tests {
     }
 
     fn area(l: i32, t: i32, r: i32, b: i32) -> RECT {
-        RECT { left: l, top: t, right: r, bottom: b }
+        RECT {
+            left: l,
+            top: t,
+            right: r,
+            bottom: b,
+        }
     }
 
     #[test]

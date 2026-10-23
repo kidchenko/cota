@@ -443,7 +443,10 @@ mod tests {
         let l = model(1, 0).layout(&|v| v);
         assert!(l.hero.is_some());
         assert!(l.rows.is_empty());
-        assert!(l.rules.is_empty(), "a rule with nothing under it is a stray line");
+        assert!(
+            l.rules.is_empty(),
+            "a rule with nothing under it is a stray line"
+        );
     }
 
     #[test]

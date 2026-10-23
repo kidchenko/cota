@@ -22,8 +22,8 @@ use crate::{art, autostart, creds, log, notify, theme, timefmt, util};
 use tao::event::Event;
 use tao::event_loop::EventLoopProxy;
 use tray_icon::menu::{
-    accelerator::Accelerator, CheckMenuItem, Icon as MenuImage, IconMenuItem, Menu, MenuEvent, MenuItem,
-    PredefinedMenuItem, Submenu,
+    accelerator::Accelerator, CheckMenuItem, Icon as MenuImage, IconMenuItem, Menu, MenuEvent,
+    MenuItem, PredefinedMenuItem, Submenu,
 };
 use tray_icon::{
     Icon as TrayImage, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
@@ -138,10 +138,7 @@ impl App {
             mark: icon::claude_mark(util::menu_icon_edge()),
             plan: creds::load().ok().and_then(|c| c.subscription),
             panel: Panel::new()
-                .map_err(|e| {
-                    crate::panel::report_failure(&e);
-                    e
-                })
+                .inspect_err(|e| crate::panel::report_failure(e))
                 .ok(),
             panel_model: PanelModel::default(),
             open_on_first_report: false,
@@ -368,7 +365,10 @@ impl App {
 
         // Strip the leading "Cota — " that the tooltip carries; the toast
         // already has the app's name on it.
-        let body = summary.split_once("\u{2014} ").map(|x| x.1).unwrap_or(summary);
+        let body = summary
+            .split_once("\u{2014} ")
+            .map(|x| x.1)
+            .unwrap_or(summary);
         // A replayed reading must say so, or "refresh" silently becomes a word
         // for "show me something from four minutes ago".
         let body = match report.stale_for {
@@ -484,7 +484,11 @@ impl App {
             Ok(()) => linfo!("run at login: {target}"),
             Err(e) => {
                 lerror!("could not change autostart: {e}");
-                notify::show("Cota", "Could not change the run-at-login setting.", Some(&e));
+                notify::show(
+                    "Cota",
+                    "Could not change the run-at-login setting.",
+                    Some(&e),
+                );
             }
         }
         self.rebuild_menu();
