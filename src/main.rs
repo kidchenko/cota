@@ -15,6 +15,7 @@
 //! | `app`      | the tray icon and its menu                               |
 
 mod app;
+mod art;
 mod autostart;
 mod burn;
 mod config;

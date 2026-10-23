@@ -17,13 +17,13 @@ use crate::log::{ldebug, lerror, linfo};
 use crate::panel::{Panel, PanelModel, PanelRow};
 use crate::poller::{Poller, Report, SharedConfig};
 use crate::state::Projection;
-use crate::{autostart, creds, log, notify, theme, timefmt, util};
+use crate::{art, autostart, creds, log, notify, theme, timefmt, util};
 
 use tao::event::Event;
 use tao::event_loop::EventLoopProxy;
 use tray_icon::menu::{
-    CheckMenuItem, Icon as MenuImage, IconMenuItem, Menu, MenuEvent, MenuItem,
-    PredefinedMenuItem,
+    accelerator::Accelerator, CheckMenuItem, Icon as MenuImage, IconMenuItem, Menu, MenuEvent, MenuItem,
+    PredefinedMenuItem, Submenu,
 };
 use tray_icon::{
     Icon as TrayImage, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
@@ -167,12 +167,7 @@ impl App {
             Event::UserEvent(UserEvent::ToggleEnabled) => self.toggle_enabled(),
             Event::UserEvent(UserEvent::ToggleAutostart) => self.toggle_autostart(),
             Event::UserEvent(UserEvent::OpenLog) => log::reveal(),
-            Event::UserEvent(UserEvent::OpenConfig) => {
-                if let Some(d) = Config::dir() {
-                    let _ = std::fs::create_dir_all(&d);
-                    util::shell_open(&d.to_string_lossy());
-                }
-            }
+            Event::UserEvent(UserEvent::OpenConfig) => open_config(),
             _ => {}
         }
         Flow::Continue
@@ -443,8 +438,8 @@ impl App {
         // Commands only. The readout moved to the panel because a menu paints
         // everything you cannot click in the same grey, which put the data
         // below "Quit Cota" in the visual hierarchy.
-        let _ = menu.append(&MenuItem::with_id(ID_PANEL, "Show usage", true, None));
-        let _ = menu.append(&MenuItem::with_id(ID_REFRESH, "Refresh now", true, None));
+        let _ = menu.append(&icon_item(ID_PANEL, "Show usage", "gauge", None));
+        let _ = menu.append(&icon_item(ID_REFRESH, "Refresh now", "refresh-cw", None));
         let _ = menu.append(&CheckMenuItem::with_id(
             ID_ENABLED,
             "Polling enabled",
@@ -452,18 +447,10 @@ impl App {
             enabled,
             None,
         ));
-        let _ = menu.append(&CheckMenuItem::with_id(
-            ID_AUTOSTART,
-            "Run at login",
-            true,
-            autostart::is_enabled(),
-            None,
-        ));
         let _ = menu.append(&PredefinedMenuItem::separator());
-        let _ = menu.append(&MenuItem::with_id(ID_CONFIG, "Open config folder", true, None));
-        let _ = menu.append(&MenuItem::with_id(ID_LOG, "Open log", true, None));
+        let _ = menu.append(&settings_menu());
         let _ = menu.append(&PredefinedMenuItem::separator());
-        let _ = menu.append(&MenuItem::with_id(ID_QUIT, "Quit Cota", true, None));
+        let _ = menu.append(&icon_item(ID_QUIT, "Quit Cota", "power", shortcut('q')));
 
         self.tray.set_menu(Some(Box::new(menu)));
     }
@@ -501,6 +488,86 @@ impl App {
             }
         }
         self.rebuild_menu();
+    }
+}
+
+/// A menu row with a Lucide glyph beside it.
+fn icon_item(id: &str, text: &str, glyph: &str, accel: Option<Accelerator>) -> IconMenuItem {
+    let item = IconMenuItem::with_id(id, text, true, None, accel);
+    #[cfg(target_os = "macos")]
+    item.set_icon_templated(art::glyph(glyph));
+    #[cfg(windows)]
+    item.set_icon(art::glyph(glyph));
+    item
+}
+
+/// Things set once and left alone, the way Café and Porta lay them out.
+fn settings_menu() -> Submenu {
+    let sub = Submenu::new("Settings", true);
+    #[cfg(target_os = "macos")]
+    sub.set_icon_templated(art::glyph("settings"));
+    #[cfg(windows)]
+    sub.set_icon(art::glyph("settings"));
+    let _ = sub.append(&CheckMenuItem::with_id(
+        ID_AUTOSTART,
+        "Run at login",
+        true,
+        autostart::is_enabled(),
+        None,
+    ));
+    let _ = sub.append(&PredefinedMenuItem::separator());
+    let _ = sub.append(&icon_item(
+        ID_CONFIG,
+        "Edit settings file\u{2026}",
+        "file-cog",
+        shortcut(','),
+    ));
+    let _ = sub.append(&icon_item(ID_LOG, "Open log", "scroll-text", None));
+    let _ = sub.append(&PredefinedMenuItem::separator());
+    let _ = sub.append(&MenuItem::with_id(
+        ID_ROW,
+        concat!("Cota ", env!("CARGO_PKG_VERSION")),
+        false,
+        None,
+    ));
+    sub
+}
+
+/// ⌘ and a key, on macOS. Windows tray menus can't take keyboard shortcuts.
+fn shortcut(key: char) -> Option<Accelerator> {
+    if !cfg!(target_os = "macos") {
+        return None;
+    }
+    use tray_icon::menu::accelerator::{Code, Modifiers};
+    let code = match key {
+        'q' => Code::KeyQ,
+        ',' => Code::Comma,
+        _ => return None,
+    };
+    Some(Accelerator::new(Modifiers::META, code))
+}
+
+/// Open config.json in a text editor, creating it first if need be. The
+/// poller notices the save and picks it up.
+fn open_config() {
+    let Some(path) = Config::path() else { return };
+    if !path.exists() {
+        if let Err(e) = Config::load().save() {
+            lerror!("could not write {}: {e}", path.display());
+            return;
+        }
+    }
+    // Notepad / TextEdit rather than the .json association, which on many
+    // machines is a browser or nothing at all.
+    #[cfg(windows)]
+    let spawned = std::process::Command::new("notepad.exe").arg(&path).spawn();
+    #[cfg(target_os = "macos")]
+    let spawned = std::process::Command::new("/usr/bin/open")
+        .arg("-t")
+        .arg(&path)
+        .spawn();
+    if let Err(e) = spawned {
+        lerror!("could not open {}: {e}", path.display());
     }
 }
 
