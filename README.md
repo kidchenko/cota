@@ -42,13 +42,11 @@ toast its numbers instead of starting a second copy.
 ### Windows
 
 ```powershell
-winget install kidchenko.Cota
-# or
-choco install cota
-# or
 scoop bucket add kidchenko https://github.com/kidchenko/scoop-bucket
 scoop install kidchenko/cota
 ```
+
+winget and Chocolatey packages are on the way.
 
 Or grab [**Cota-Setup.exe**](https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe)
 directly. Each release also ships a portable `cota-x.y.z-x64.exe` that runs
@@ -66,7 +64,7 @@ brew install --cask kidchenko/tap/cota
 ```
 
 Or download [**Cota.dmg**](https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg)
-(Apple silicon), open it, and drag Cota into **Applications**. It lives in the
+(Apple silicon and Intel), open it, and drag Cota into **Applications**. It lives in the
 menu bar with no Dock icon.
 
 The build isn't notarized, so Gatekeeper blocks the first launch (the cask
