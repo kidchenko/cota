@@ -45,6 +45,9 @@ toast its numbers instead of starting a second copy.
 winget install kidchenko.Cota
 # or
 choco install cota
+# or
+scoop bucket add kidchenko https://github.com/kidchenko/scoop-bucket
+scoop install kidchenko/cota
 ```
 
 Or grab [**Cota-Setup.exe**](https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe)
