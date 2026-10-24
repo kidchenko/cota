@@ -7,8 +7,9 @@
     <owners>kidchenko</owners>
     <title>Cota</title>
     <authors>kidchenko</authors>
+    <copyright>Copyright (c) 2026 kidchenko</copyright>
     <projectUrl>https://github.com/kidchenko/cota</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/kidchenko/cota/main/assets/icon-256.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/kidchenko/cota@f3cf00f5d524bde156f2aec42d8fcd59569e4507/assets/icon-256.png</iconUrl>
     <licenseUrl>https://github.com/kidchenko/cota/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/kidchenko/cota</projectSourceUrl>
