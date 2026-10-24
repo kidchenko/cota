@@ -35,6 +35,7 @@ const ID_ENABLED: &str = "enabled";
 const ID_AUTOSTART: &str = "autostart";
 const ID_CONFIG: &str = "config";
 const ID_LOG: &str = "log";
+const ID_UPDATES: &str = "check-updates";
 const ID_QUIT: &str = "quit";
 /// Every read-only row shares this id; nothing ever dispatches on it.
 const ID_ROW: &str = "row";
@@ -50,6 +51,7 @@ pub enum UserEvent {
     ToggleAutostart,
     OpenConfig,
     OpenLog,
+    CheckUpdates,
     Quit,
 }
 
@@ -165,6 +167,12 @@ impl App {
             Event::UserEvent(UserEvent::ToggleAutostart) => self.toggle_autostart(),
             Event::UserEvent(UserEvent::OpenLog) => log::reveal(),
             Event::UserEvent(UserEvent::OpenConfig) => open_config(),
+            // The browser does the comparing, so Cota itself stays off the
+            // network except for the one endpoint it exists to read.
+            Event::UserEvent(UserEvent::CheckUpdates) => util::shell_open(concat!(
+                "https://josebarbosa.dev/cota/?v=",
+                env!("CARGO_PKG_VERSION")
+            )),
             _ => {}
         }
         Flow::Continue
@@ -449,6 +457,12 @@ impl App {
         ));
         let _ = menu.append(&PredefinedMenuItem::separator());
         let _ = menu.append(&settings_menu());
+        let _ = menu.append(&MenuItem::with_id(
+            ID_UPDATES,
+            "Check for updates\u{2026}",
+            true,
+            None,
+        ));
         let _ = menu.append(&PredefinedMenuItem::separator());
         let _ = menu.append(&icon_item(ID_QUIT, "Quit Cota", "power", shortcut('q')));
 
@@ -585,6 +599,7 @@ fn forward_menu_events(proxy: &EventLoopProxy<UserEvent>) {
             ID_AUTOSTART => UserEvent::ToggleAutostart,
             ID_CONFIG => UserEvent::OpenConfig,
             ID_LOG => UserEvent::OpenLog,
+            ID_UPDATES => UserEvent::CheckUpdates,
             ID_QUIT => UserEvent::Quit,
             _ => return,
         };

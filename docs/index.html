@@ -230,6 +230,53 @@
   details p { margin: 14px 0 0; }
   details p:last-child { margin-bottom: 0; }
 
+  /* ---------------------------------------------------------------- update */
+  /* Shown only when the app's "Check for updates…" item opens the page. */
+  .update {
+    margin: 0 auto 36px;
+    max-width: 34rem;
+    padding: 12px 18px;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--dim);
+    font-size: .95rem;
+  }
+  .update[data-state="new"] { border-color: var(--accent); }
+  .update[data-state="new"] strong { color: var(--accent); }
+  .update code { white-space: nowrap; }
+  .for-mac-inline { display: none; }
+  .os-mac .for-mac-inline { display: inline; }
+  .os-mac .for-win-inline { display: none; }
+
+  /* ------------------------------------------------------------------ copy */
+  .copy {
+    font: .78rem/1 "Cascadia Code", Consolas, ui-monospace, monospace;
+    color: var(--dim);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: .3em .55em;
+    margin-left: .4em;
+    vertical-align: .1em;
+    cursor: pointer;
+  }
+  .copy:hover { color: var(--text); border-color: var(--faint); }
+  .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ------------------------------------------------------------- more apps */
+  .apps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 28px;
+    margin: 0;
+  }
+  .apps li { display: flex; gap: 12px; align-items: flex-start; padding-left: 0; margin: 0 0 10px; }
+  .apps li::before { content: none; }
+  .apps img { width: 32px; height: 32px; flex: none; margin-top: 2px; }
+  .apps a { font-weight: 600; }
+  .apps span { display: block; font-size: .92rem; }
+
   footer {
     margin-top: 84px;
     padding: 34px 0 54px;
@@ -247,6 +294,7 @@
     .rings img { width: 62px; height: 62px; }
     .rings .who { font-size: .78rem; }
     .stage { padding: 28px 0 24px; }
+    .apps { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -254,6 +302,7 @@
 
 <header>
   <div class="wrap">
+    <div class="update" id="update" role="status" hidden></div>
     <img class="mark" src="img/icon.svg" alt="" width="132" height="132">
     <h1>Cota</h1>
     <p class="tagline">Your Claude usage limits, in the tray</p>
@@ -269,8 +318,8 @@
       <a class="download dl-win" href="https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe">Download for Windows</a>
       <a class="download ghost dl-mac" href="https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg">Download for macOS</a>
     </div>
-    <p class="alt for-win">or <code>scoop install kidchenko/cota</code> · winget and Chocolatey coming</p>
-    <p class="alt for-mac">or <code>brew install --cask kidchenko/tap/cota</code> · unsigned — first launch: <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Open&nbsp;Anyway</strong></p>
+    <p class="alt for-win">or <code data-copy>scoop install kidchenko/cota</code> · winget and Chocolatey coming</p>
+    <p class="alt for-mac">or <code data-copy>brew install --cask kidchenko/tap/cota</code> · unsigned — first launch: <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Open&nbsp;Anyway</strong></p>
 
     <p class="req for-win">Windows 10 or later · x64 · free and open source<br>
       <a href="https://github.com/kidchenko/cota/releases">All releases</a> — portable build, checksums, notes</p>
@@ -443,12 +492,31 @@
     </details>
   </section>
 
+  <section>
+    <h2>More small tray apps</h2>
+    <ul class="apps">
+      <li><img src="https://josebarbosa.dev/cafe/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/cafe/">Cafe</a><span>Keeps your Mac or PC awake, from the tray.</span></div></li>
+      <li><img src="https://josebarbosa.dev/cantos/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/cantos/">Cantos</a><span>Hot corners for Windows, macOS and Linux.</span></div></li>
+      <li><img src="https://josebarbosa.dev/luz/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/luz/">Luz</a><span>Warms your screen at night, like f.lux.</span></div></li>
+      <li><img src="https://josebarbosa.dev/porta/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/porta/">Porta</a><span>What&rsquo;s listening on your ports, and a way to stop it.</span></div></li>
+      <li><img src="https://josebarbosa.dev/sonus/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/sonus/">Sonus</a><span>A volume slider for every app.</span></div></li>
+      <li><img src="https://josebarbosa.dev/suavez/img/icon-256.png" alt="" width="32" height="32">
+        <div><a href="https://josebarbosa.dev/suavez/">Sua Vez</a><span>Lights up when your coding agent finishes or needs you.</span></div></li>
+    </ul>
+  </section>
+
 </div>
 
 <footer>
   <div class="wrap">
     <p><a href="https://github.com/kidchenko/cota">Source on GitHub</a> ·
-       MIT licensed · by <a href="https://github.com/kidchenko">kidchenko</a></p>
+       MIT licensed · by <a href="https://github.com/kidchenko">kidchenko</a> ·
+       <a href="https://josebarbosa.dev/portfolio/">All apps</a></p>
     <p>Not affiliated with Anthropic.</p>
   </div>
 </footer>
@@ -463,6 +531,72 @@
     if (/mac/i.test(plat) || /Mac OS X/.test(ua)) {
       document.body.classList.add("os-mac");
     }
+  })();
+
+  // Opened from the app's "Check for updates…" menu item as ?v=<installed>.
+  // The app only ever talks to api.anthropic.com; this page asks GitHub instead.
+  (function () {
+    var have = new URLSearchParams(location.search).get("v");
+    if (!have || !/^\d+(\.\d+){0,3}$/.test(have)) return;
+    var box = document.getElementById("update");
+    function cmp(a, b) {
+      a = a.split("."); b = b.split(".");
+      for (var i = 0; i < Math.max(a.length, b.length); i++) {
+        var d = (+a[i] || 0) - (+b[i] || 0);
+        if (d) return d;
+      }
+      return 0;
+    }
+    function show(html, state) {
+      box.innerHTML = html;
+      box.setAttribute("data-state", state);
+      box.hidden = false;
+    }
+    fetch("https://api.github.com/repos/kidchenko/cota/releases/latest")
+      .then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+      .then(function (rel) {
+        var latest = String(rel.tag_name || "").replace(/^v/, "");
+        if (!/^\d+(\.\d+){0,3}$/.test(latest)) throw "tag";
+        if (cmp(latest, have) > 0) {
+          show("<strong>Cota " + latest + " is out.</strong> You have " + have + ". " +
+               "Download it below, or run " +
+               "<code class=\"for-mac-inline\">brew upgrade --cask kidchenko/tap/cota</code>" +
+               "<code class=\"for-win-inline\">scoop update cota</code> if you installed it that way.", "new");
+        } else {
+          show("You have the latest version of Cota (" + have + ").", "current");
+        }
+      })
+      .catch(function () {
+        show("Could not reach GitHub to check. You have " + have + ". " +
+             "<a href=\"https://github.com/kidchenko/cota/releases\">See all releases</a>.", "error");
+      });
+  })();
+
+  // A copy button after each install command. Without the clipboard API
+  // (an old browser, or the page opened from disk) it selects the text instead.
+  (function () {
+    var codes = document.querySelectorAll("code[data-copy]");
+    for (var i = 0; i < codes.length; i++) (function (code) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "copy";
+      btn.textContent = "Copy";
+      btn.addEventListener("click", function () {
+        function select() {
+          var range = document.createRange();
+          range.selectNodeContents(code);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        if (!navigator.clipboard || !navigator.clipboard.writeText) return select();
+        navigator.clipboard.writeText(code.textContent).then(function () {
+          btn.textContent = "Copied";
+          setTimeout(function () { btn.textContent = "Copy"; }, 1500);
+        }, select);
+      });
+      code.parentNode.insertBefore(btn, code.nextSibling);
+    })(codes[i]);
   })();
 </script>
 
