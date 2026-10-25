@@ -192,7 +192,8 @@ Set `COTA_LOG=debug` and the full response lands in `cota.log`, next to
 On Linux the same `./build.sh` builds the binary, and `--package` adds a .deb,
 an .rpm and a .tar.gz. It needs `libgtk-3-dev`, `libayatana-appindicator3-dev`
 and `libssl-dev`. From any other OS, `packaging/linux/Dockerfile` is a Linux to
-build it in.
+build it in, and `packaging/linux/desktop/` adds a desktop with a tray to try it
+in, viewed from your browser.
 
 Needs only the Rust toolchain — no WebView2, no installer tooling. The ring and
 panel layout are shared Rust; only the OS-specific pieces fork (GDI, AppKit or
