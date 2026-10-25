@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cota — your Claude usage limits, in the tray</title>
-<meta name="description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. A 1 MB tray app for macOS and Windows. Free and open source.">
+<meta name="description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. A 1 MB tray app for macOS, Windows and Linux. Free and open source.">
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
 
 <meta property="og:title" content="Cota — your Claude usage limits, in the tray">
-<meta property="og:description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. For macOS and Windows.">
+<meta property="og:description" content="A ring that fills as your Claude limits do, so you find out before you hit the wall. For macOS, Windows and Linux.">
 <meta property="og:image" content="https://josebarbosa.dev/cota/img/icon-256.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
@@ -100,24 +100,24 @@
   }
   .download.ghost:hover { filter: none; background: rgba(63,185,80,.09); }
 
-  /* OS-aware. The default (no script, or a non-Mac visitor) leads with Windows;
-     on a Mac the two flip and the macOS button becomes the filled primary and
-     comes first. Driven by one body class, so with JS off both buttons are still
-     present and both work. */
-  .os-mac .dl-win { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px #2b3040; }
-  .os-mac .dl-win:hover { filter: none; background: rgba(63,185,80,.09); }
-  .os-mac .dl-mac { background: var(--accent); color: #07230e; box-shadow: none; order: -1; }
-  .os-mac .dl-mac:hover { filter: brightness(1.08); background: var(--accent); }
+  /* OS-aware. The default (no script, or a Windows visitor) leads with Windows;
+     on a Mac or a Linux machine that platform's button becomes the filled
+     primary and comes first. Driven by one body class, so with JS off every
+     button is still present and works. */
+  .os-mac .dl-win, .os-linux .dl-win { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px #2b3040; }
+  .os-mac .dl-win:hover, .os-linux .dl-win:hover { filter: none; background: rgba(63,185,80,.09); }
+  .os-mac .dl-mac, .os-linux .dl-linux { background: var(--accent); color: #07230e; box-shadow: none; order: -1; }
+  .os-mac .dl-mac:hover, .os-linux .dl-linux:hover { filter: brightness(1.08); background: var(--accent); }
 
   .alt { margin: 18px 0 0; color: var(--faint); font-size: .95rem; }
-  .alt code { background: transparent; border: 0; color: var(--dim); padding: 0; }
+  .alt code { background: transparent; border: 0; color: var(--dim); padding: 0; overflow-wrap: anywhere; }
 
   .req { color: var(--faint); font-size: .88rem; margin: 26px 0 0; }
 
   /* Per-OS lines: the download hints and requirements swap with the buttons. */
-  .for-mac { display: none; }
-  .os-mac .for-win { display: none; }
-  .os-mac .for-mac { display: block; }
+  .for-mac, .for-linux { display: none; }
+  .os-mac .for-win, .os-linux .for-win { display: none; }
+  .os-mac .for-mac, .os-linux .for-linux { display: block; }
 
   /* ----------------------------------------------------------------- shot */
   .shot { margin: 40px auto 0; text-align: center; }
@@ -247,7 +247,7 @@
   .update code { white-space: nowrap; }
   .for-mac-inline { display: none; }
   .os-mac .for-mac-inline { display: inline; }
-  .os-mac .for-win-inline { display: none; }
+  .os-mac .for-win-inline, .os-linux .for-win-inline, .os-linux .not-linux-inline { display: none; }
 
   /* ------------------------------------------------------------------ copy */
   .copy {
@@ -313,18 +313,24 @@
            identical across releases, so a versioned filename here would have to
            be edited on the page every time one ships -- and a download button
            pointing at a version that no longer exists is worse than no button.
-           build.ps1 writes dist\Cota-Setup.exe and build.sh writes dist/Cota.dmg
-           alongside the versioned copies, so every release carries both. -->
+           build.ps1 writes dist\Cota-Setup.exe, build.sh writes dist/Cota.dmg and
+           packaging/linux/build.sh writes dist/cota_amd64.deb and the rest
+           alongside the versioned copies, so every release carries them all. -->
       <a class="download dl-win" href="https://github.com/kidchenko/cota/releases/latest/download/Cota-Setup.exe">Download for Windows</a>
       <a class="download ghost dl-mac" href="https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg">Download for macOS</a>
+      <a class="download ghost dl-linux" href="https://github.com/kidchenko/cota/releases/latest/download/cota_amd64.deb">Download for Linux</a>
     </div>
     <p class="alt for-win">or <code data-copy>scoop install kidchenko/cota</code> · winget and Chocolatey coming</p>
     <p class="alt for-mac">or <code data-copy>brew install --cask kidchenko/tap/cota</code> · unsigned — first launch: <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Open&nbsp;Anyway</strong></p>
+
+    <p class="alt for-linux">then <code data-copy>sudo apt install ./cota_amd64.deb</code> · Fedora and openSUSE: <code data-copy>sudo dnf install https://github.com/kidchenko/cota/releases/latest/download/cota.x86_64.rpm</code> · anything else: the <a href="https://github.com/kidchenko/cota/releases/latest/download/cota-x86_64-linux.tar.gz">.tar.gz</a></p>
 
     <p class="req for-win">Windows 10 or later · x64 · free and open source<br>
       <a href="https://github.com/kidchenko/cota/releases">All releases</a> — portable build, checksums, notes</p>
     <p class="req for-mac">macOS 11 or later · Apple silicon and Intel · free and open source<br>
       <a href="https://github.com/kidchenko/cota/releases">All releases</a> — checksums, notes</p>
+    <p class="req for-linux">Ubuntu 22.04, Debian 12, Fedora or newer · x64 · GTK&nbsp;3 · free and open source<br>
+      <a href="https://github.com/kidchenko/cota/releases">All releases</a> — .deb, .rpm, .tar.gz, checksums, notes</p>
   </div>
 </header>
 
@@ -334,7 +340,7 @@
     <div class="stage">
       <img src="img/panel.png" alt="The Cota panel: 88% weekly in amber with a progress bar, session at 46% and a per-model limit at 3% below it, then a projection reading &quot;At this rate: full in 3h 20m&quot;.">
     </div>
-    <figcaption>Left-click the tray icon. Right-click for the menu.</figcaption>
+    <figcaption>Left-click the tray icon. Right-click for the menu. On Linux, choose <strong>Show usage</strong> from the menu.</figcaption>
   </figure>
 
   <section>
@@ -342,8 +348,8 @@
     in a session you already have open. Cota is the same numbers when you
     <em>didn't</em> ask.</p>
 
-    <p>A ring sits in the tray — the macOS menu bar or the Windows notification
-    area — and fills as your fullest limit does.
+    <p>A ring sits in the tray — the macOS menu bar, the Windows notification
+    area or the Linux desktop's panel — and fills as your fullest limit does.
     It goes amber at 75% and red at 90%, so "I have two days of weekly left" is
     something you know rather than something you check — and finding out you are
     nearly out stops being something that happens halfway through a refactor.</p>
@@ -400,7 +406,8 @@
     refresh the token: Claude Code already does that, so Cota simply re-reads the
     file each time.</p>
     <p>TLS goes through the operating system's own trust store — the Windows
-    certificate store, the Keychain's roots on macOS — rather than a bundled root
+    certificate store, the Keychain's roots on macOS, the distribution's CA bundle
+    on Linux — rather than a bundled root
     set, and on Windows the system proxy is respected, so it keeps working on a
     managed machine where the proxy inspects traffic.</p>
   </section>
@@ -410,9 +417,16 @@
 
     <details>
       <summary>Which platforms does it run on?</summary>
-      <p>macOS 11 or later (Apple silicon and Intel) and Windows 10 or later (x64). The
-      page offers the build for the system you are on; both are on the
+      <p>macOS 11 or later (Apple silicon and Intel), Windows 10 or later (x64),
+      and Linux on x64 with GTK&nbsp;3: Ubuntu 22.04, Debian 12, Fedora or newer, as
+      a .deb or an .rpm, or a .tar.gz for anything else, Arch included. The page
+      offers the build for the system you are on; all of them are on the
       <a href="https://github.com/kidchenko/cota/releases">releases</a> page.</p>
+      <p>On Linux the icon needs a tray that shows app indicators. KDE, XFCE,
+      Cinnamon and MATE have one, and so does Ubuntu's GNOME. On other GNOME
+      desktops, turn on the AppIndicator extension. The tray there passes no
+      clicks to the app, so every click opens the menu; <strong>Show usage</strong>
+      opens the panel.</p>
     </details>
 
     <details>
@@ -481,7 +495,8 @@
       open it normally.</p>
       <p>The source is on GitHub if you would rather build it yourself: the Rust
       toolchain and nothing else — <code>build.ps1</code> on Windows,
-      <code>build.sh</code> on macOS.</p>
+      <code>build.sh</code> on macOS and Linux (where it also needs the GTK
+      development headers).</p>
     </details>
 
     <details>
@@ -523,13 +538,15 @@
 
 <script>
   // Lead with the visitor's platform. Progressive enhancement only: with this
-  // disabled both download buttons are still shown, Windows first.
+  // disabled every download button is still shown, Windows first.
   (function () {
     var ua = navigator.userAgent || "";
     var plat = (navigator.userAgentData && navigator.userAgentData.platform) ||
                navigator.platform || "";
     if (/mac/i.test(plat) || /Mac OS X/.test(ua)) {
       document.body.classList.add("os-mac");
+    } else if (/linux/i.test(plat + " " + ua) && !/android|cros/i.test(ua)) {
+      document.body.classList.add("os-linux");
     }
   })();
 
@@ -559,9 +576,9 @@
         if (!/^\d+(\.\d+){0,3}$/.test(latest)) throw "tag";
         if (cmp(latest, have) > 0) {
           show("<strong>Cota " + latest + " is out.</strong> You have " + have + ". " +
-               "Download it below, or run " +
+               "Download it below<span class=\"not-linux-inline\">, or run " +
                "<code class=\"for-mac-inline\">brew upgrade --cask kidchenko/tap/cota</code>" +
-               "<code class=\"for-win-inline\">scoop update cota</code> if you installed it that way.", "new");
+               "<code class=\"for-win-inline\">scoop update cota</code> if you installed it that way</span>.", "new");
         } else {
           show("You have the latest version of Cota (" + have + ").", "current");
         }
