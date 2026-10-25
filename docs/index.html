@@ -100,14 +100,19 @@
   }
   .download.ghost:hover { filter: none; background: rgba(63,185,80,.09); }
 
-  /* OS-aware. The default (no script, or a Windows visitor) leads with Windows;
-     on a Mac or a Linux machine that platform's button becomes the filled
-     primary and comes first. Driven by one body class, so with JS off every
-     button is still present and works. */
+  /* OS-aware. With a platform detected, only its button shows, filled, and
+     "Also for" offers the other two. With none detected (no script, a phone)
+     every button shows, Windows first. Driven by one body class. */
   .os-mac .dl-win, .os-linux .dl-win { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px #2b3040; }
   .os-mac .dl-win:hover, .os-linux .dl-win:hover { filter: none; background: rgba(63,185,80,.09); }
   .os-mac .dl-mac, .os-linux .dl-linux { background: var(--accent); color: #07230e; box-shadow: none; order: -1; }
   .os-mac .dl-mac:hover, .os-linux .dl-linux:hover { filter: brightness(1.08); background: var(--accent); }
+  .os-win .dl-mac, .os-win .dl-linux,
+  .os-mac .dl-win, .os-mac .dl-linux,
+  .os-linux .dl-win, .os-linux .dl-mac { display: none; }
+
+  .others { margin: 14px 0 0; color: var(--faint); font-size: .9rem; }
+  .others[hidden] { display: none; }
 
   .alt { margin: 18px 0 0; color: var(--faint); font-size: .95rem; }
   .alt code { background: transparent; border: 0; color: var(--dim); padding: 0; overflow-wrap: anywhere; }
@@ -320,6 +325,7 @@
       <a class="download ghost dl-mac" href="https://github.com/kidchenko/cota/releases/latest/download/Cota.dmg">Download for macOS</a>
       <a class="download ghost dl-linux" href="https://github.com/kidchenko/cota/releases/latest/download/cota_amd64.deb">Download for Linux</a>
     </div>
+    <p class="others" id="others" hidden></p>
     <p class="alt for-win">or <code data-copy>scoop install kidchenko/cota</code> · winget and Chocolatey coming</p>
     <p class="alt for-mac">or <code data-copy>brew install --cask kidchenko/tap/cota</code> · unsigned — first launch: <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security → Open&nbsp;Anyway</strong></p>
 
@@ -537,17 +543,42 @@
 </footer>
 
 <script>
-  // Lead with the visitor's platform. Progressive enhancement only: with this
-  // disabled every download button is still shown, Windows first.
+  // Show the visitor's platform only, with "Also for" switching to the others.
+  // Progressive enhancement: with this disabled, or on a platform Cota does not
+  // run on (a phone, a tablet), every download button is shown.
   (function () {
+    var names = { win: "Windows", mac: "macOS", linux: "Linux" };
+    var others = document.getElementById("others");
     var ua = navigator.userAgent || "";
     var plat = (navigator.userAgentData && navigator.userAgentData.platform) ||
                navigator.platform || "";
-    if (/mac/i.test(plat) || /Mac OS X/.test(ua)) {
-      document.body.classList.add("os-mac");
-    } else if (/linux/i.test(plat + " " + ua) && !/android|cros/i.test(ua)) {
-      document.body.classList.add("os-linux");
+    var os = null;
+    if (/iphone|ipad|ipod|android|cros/i.test(ua) || navigator.maxTouchPoints > 1 && /mac/i.test(plat)) {
+      os = null; // iPads report themselves as Macs; touch gives them away.
+    } else if (/mac/i.test(plat) || /Mac OS X/.test(ua)) {
+      os = "mac";
+    } else if (/win/i.test(plat) || /Windows/.test(ua)) {
+      os = "win";
+    } else if (/linux/i.test(plat + " " + ua)) {
+      os = "linux";
     }
+    function show(os) {
+      var body = document.body.classList;
+      body.remove("os-win", "os-mac", "os-linux");
+      body.add("os-" + os);
+      others.textContent = "Also for ";
+      Object.keys(names).filter(function (k) { return k !== os; })
+        .forEach(function (k, i) {
+          if (i) others.appendChild(document.createTextNode(" \u00b7 "));
+          var a = document.createElement("a");
+          a.href = "#";
+          a.textContent = names[k];
+          a.addEventListener("click", function (e) { e.preventDefault(); show(k); });
+          others.appendChild(a);
+        });
+      others.hidden = false;
+    }
+    if (os) show(os);
   })();
 
   // Opened from the app's "Check for updates…" menu item as ?v=<installed>.
