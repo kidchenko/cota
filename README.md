@@ -78,8 +78,7 @@ the app is still on the read-only disk image.
 
 ### Linux
 
-Packages ship from the next release (after 0.0.4). Ubuntu, Debian, Linux Mint
-and Pop!_OS:
+Ubuntu, Debian, Linux Mint and Pop!_OS:
 
 ```bash
 wget https://github.com/kidchenko/cota/releases/latest/download/cota_amd64.deb
