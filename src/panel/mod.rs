@@ -12,8 +12,8 @@
 //! This module holds everything that does not care how pixels reach the screen:
 //! the [`PanelModel`], the [`Layout`] arithmetic, the geometry constants, and
 //! the dismiss-guard logic. The platform submodules own the window and the
-//! drawing — GDI on Windows, AppKit on macOS — and both are painted from the
-//! same layout, so the picture matches whoever draws it.
+//! drawing — GDI on Windows, AppKit on macOS, GTK and cairo on Linux — and all
+//! are painted from the same layout, so the picture matches whoever draws it.
 
 use crate::usage::Severity;
 
@@ -29,6 +29,11 @@ pub use win32::{preview, render_to_rgba, report_failure, Panel};
 mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::{preview, render_to_rgba, report_failure, Panel};
+
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "linux")]
+pub use linux::{preview, render_to_rgba, report_failure, Panel};
 
 // ---------------------------------------------------------------------------
 // Geometry

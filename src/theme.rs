@@ -1,8 +1,20 @@
 //! System light/dark preference — specifically, whether the strip the ring
-//! lives in (the Windows taskbar, the macOS menu bar) is dark, so the ring's
-//! track can be tuned to the background it actually sits on.
+//! lives in (the Windows taskbar, the macOS menu bar, the Linux desktop's
+//! panel) is dark, so the ring's track can be tuned to the background it
+//! actually sits on.
 
 pub use imp::taskbar_is_dark;
+
+/// Whether the bar the tray icon sits on is dark, for the ring and the menu
+/// glyphs. The same answer as the panel's everywhere but GNOME, whose top bar
+/// (and the menus it opens) stays dark in light mode too.
+pub fn tray_is_dark() -> bool {
+    let gnome = cfg!(target_os = "linux")
+        && std::env::var("XDG_CURRENT_DESKTOP")
+            .map(|d| d.split(':').any(|d| d.eq_ignore_ascii_case("gnome")))
+            .unwrap_or(false);
+    gnome || taskbar_is_dark()
+}
 
 // ---------------------------------------------------------------------------
 // Windows
@@ -91,5 +103,49 @@ mod imp {
                 .map(|s| s.to_string().eq_ignore_ascii_case("dark"))
                 .unwrap_or(false)
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Linux
+// ---------------------------------------------------------------------------
+#[cfg(target_os = "linux")]
+mod imp {
+    use gtk::gio::{self, prelude::*};
+    use gtk::glib::Variant;
+
+    /// True when the desktop asks apps for dark.
+    ///
+    /// Asked of the desktop portal, the one place GNOME, KDE and the others
+    /// all answer: `color-scheme` is 1 for dark, 2 for light and 0 for no
+    /// preference, which is light.
+    pub fn taskbar_is_dark() -> bool {
+        portal("color-scheme").and_then(|v| v.get::<u32>()) == Some(1)
+    }
+
+    /// One `org.freedesktop.appearance` setting, unwrapped from the variant
+    /// the portal wraps it in. `None` with no session bus or no portal, as in
+    /// a bare window manager; the caller falls back to light.
+    fn portal(key: &str) -> Option<Variant> {
+        let bus = gio::bus_get_sync(gio::BusType::Session, gio::Cancellable::NONE).ok()?;
+        let reply = bus
+            .call_sync(
+                Some("org.freedesktop.portal.Desktop"),
+                "/org/freedesktop/portal/desktop",
+                "org.freedesktop.portal.Settings",
+                "ReadOne",
+                Some(&("org.freedesktop.appearance", key).to_variant()),
+                None,
+                gio::DBusCallFlags::NONE,
+                200,
+                gio::Cancellable::NONE,
+            )
+            .ok()?;
+        let mut v = reply.child_value(0);
+        // ReadOne answers v; the older Read answers v inside v.
+        while let Some(inner) = v.as_variant() {
+            v = inner;
+        }
+        Some(v)
     }
 }

@@ -7,8 +7,8 @@
 //! right now" command as well as a tray app — run it from a prompt, get a
 //! notification, no second process left behind.
 //!
-//! Windows carries the signal on a named auto-reset event; macOS on a Unix
-//! domain socket in the config directory. Both answer the same two questions in
+//! Windows carries the signal on a named auto-reset event; macOS and Linux on
+//! a Unix domain socket in the config directory. Both answer the same two questions in
 //! one object: "is anyone already running?" (the event/socket exists) and "tell
 //! them to report" (signal it / connect to it).
 
@@ -137,9 +137,9 @@ mod imp {
 }
 
 // ---------------------------------------------------------------------------
-// macOS
+// macOS and Linux
 // ---------------------------------------------------------------------------
-#[cfg(target_os = "macos")]
+#[cfg(unix)]
 mod imp {
     use crate::log::{linfo, lwarn};
     use std::io::{Read, Write};

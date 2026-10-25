@@ -27,7 +27,8 @@ tray-icon  = "0.26"
 # on both platforms. On a managed Windows box the TLS is often intercepted by a
 # corporate proxy whose root only the Windows certificate store knows about, and
 # bundled webpki roots would hard-fail there with an opaque handshake error; on
-# macOS the same reasoning points at the login keychain's roots. The Windows
+# macOS the same reasoning points at the login keychain's roots, and on Linux
+# at the distribution's CA bundle (via OpenSSL). The Windows
 # half also wants `win-system-proxy` (added under the target table below).
 ureq = { version = "3.4", default-features = false, features = [
     "native-tls",
@@ -78,6 +79,17 @@ objc2-foundation = "0.3"
 objc2-app-kit    = "0.3"
 block2           = "0.6"
 libc             = "0.2"
+
+# ---------------------------------------------------------------------------
+# Linux
+# ---------------------------------------------------------------------------
+# GTK is already in the tree for the tray (an AppIndicator menu is a GTK
+# menu); the panel is a GTK window painted with cairo and pango, as Sonus's
+# is. `libc` is for localtime_r, as on macOS.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk        = "0.18"
+pangocairo = "0.18"
+libc       = "0.2"
 
 # Size is a first-class goal, same as Cantos.
 [profile.release]

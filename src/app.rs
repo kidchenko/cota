@@ -9,6 +9,9 @@
 //! the commands. They used to be one menu with the data in disabled items, and
 //! that put the entire product in the one text colour Windows reserves for
 //! things you cannot click.
+//!
+//! On Linux the tray (an AppIndicator) tells the app nothing about clicks:
+//! every click opens the menu, and "Show usage" there opens the panel.
 
 use crate::burn::Share;
 use crate::config::Config;
@@ -101,7 +104,7 @@ impl App {
         forward_menu_events(&proxy);
         forward_tray_events(&proxy);
 
-        let dark_taskbar = theme::taskbar_is_dark();
+        let dark_taskbar = theme::tray_is_dark();
         let face = Face::Unknown;
         let image = TrayImage::from_rgba(icon::render(face, dark_taskbar), icon::EDGE, icon::EDGE)
             .map_err(|e| format!("could not build the tray image: {e}"))?;
@@ -183,7 +186,7 @@ impl App {
     fn apply(&mut self, mut report: Report) {
         // The taskbar theme can change under a running app, and the ring's
         // track is the one thing tuned to it.
-        self.dark_taskbar = theme::taskbar_is_dark();
+        self.dark_taskbar = theme::tray_is_dark();
 
         if let Some(shares) = report.shares.take() {
             self.shares = shares;
@@ -508,7 +511,7 @@ fn icon_item(id: &str, text: &str, glyph: &str, accel: Option<Accelerator>) -> I
     let item = IconMenuItem::with_id(id, text, true, None, accel);
     #[cfg(target_os = "macos")]
     item.set_icon_templated(art::glyph(glyph));
-    #[cfg(windows)]
+    #[cfg(not(target_os = "macos"))]
     item.set_icon(art::glyph(glyph));
     item
 }
@@ -518,7 +521,7 @@ fn settings_menu() -> Submenu {
     let sub = Submenu::new("Settings", true);
     #[cfg(target_os = "macos")]
     sub.set_icon_templated(art::glyph("settings"));
-    #[cfg(windows)]
+    #[cfg(not(target_os = "macos"))]
     sub.set_icon(art::glyph("settings"));
     let _ = sub.append(&CheckMenuItem::with_id(
         ID_AUTOSTART,
@@ -584,6 +587,10 @@ fn open_config() {
         .arg("-t")
         .arg(&path)
         .spawn();
+    // Linux has no "the text editor" to ask for by name, so the desktop's
+    // handler for the file it is.
+    #[cfg(target_os = "linux")]
+    let spawned = std::process::Command::new("xdg-open").arg(&path).spawn();
     if let Err(e) = spawned {
         lerror!("could not open {}: {e}", path.display());
     }

@@ -24,7 +24,7 @@ no measurable CPU.
 | | |
 |---|---|
 | **Ring** | Fills with whichever limit is closest to its ceiling. Green → amber → red. |
-| **Panel** (left-click) | The fullest limit large and in colour, the rest as compact bars. |
+| **Panel** (left-click; **Show usage** in the menu on Linux) | The fullest limit large and in colour, the rest as compact bars. |
 | **Menu** (right-click) | The commands. |
 | **Projection** | *At this rate: full in 3h 20m*, from the slope of your own usage. |
 | **Attribution** | Which project ate the week, read from local transcripts. |
@@ -76,6 +76,35 @@ clears this for you). Otherwise, clear it once:
 Move it into Applications *first* — the quarantine flag can't be cleared while
 the app is still on the read-only disk image.
 
+### Linux
+
+Packages ship from the next release (after 0.0.4). Ubuntu, Debian, Linux Mint
+and Pop!_OS:
+
+```bash
+wget https://github.com/kidchenko/cota/releases/latest/download/cota_amd64.deb
+sudo apt install ./cota_amd64.deb
+```
+
+Fedora and openSUSE:
+
+```bash
+sudo dnf install https://github.com/kidchenko/cota/releases/latest/download/cota.x86_64.rpm
+# or
+sudo zypper install https://github.com/kidchenko/cota/releases/latest/download/cota.x86_64.rpm
+```
+
+Anything else, Arch included: unpack
+[**cota-x86_64-linux.tar.gz**](https://github.com/kidchenko/cota/releases/latest/download/cota-x86_64-linux.tar.gz)
+into `/usr/local` (or `~/.local`). It needs GTK 3 and libayatana-appindicator,
+which on Arch are `gtk3` and `libayatana-appindicator`, and `notify-send`
+(`libnotify`) for notifications.
+
+Cota shows up in your app launcher. Start it once, then turn on **Run at
+login** under Settings in its menu. On GNOME the tray needs the AppIndicator
+extension, which Ubuntu ships turned on. The tray there doesn't pass clicks to
+the app, so every click opens the menu, and **Show usage** opens the panel.
+
 ### Requirements
 
 Claude Code, signed in at least once on this machine. Cota reads the token
@@ -98,7 +127,8 @@ any limit.
 
 ## Configuration
 
-`%APPDATA%\Cota\config.json`, created on first save. Edits are picked up within
+`config.json` in `%APPDATA%\Cota` (Windows), `~/Library/Application
+Support/Cota` (macOS) or `~/.config/cota` (Linux), created on first save. Edits are picked up within
 a poll — no restart.
 
 ```json
@@ -120,8 +150,8 @@ can be bumped without a rebuild.
 ## Credentials
 
 Claude Code stores its OAuth token in a plain JSON file at
-`~/.claude/.credentials.json` on Windows, and in the login Keychain (service
-`Claude Code-credentials`) on macOS. Cota reads whichever applies and sends the
+`~/.claude/.credentials.json` on Windows and Linux, and in the login Keychain
+(service `Claude Code-credentials`) on macOS. Cota reads whichever applies and sends the
 token only to `api.anthropic.com` — the service that issued it, and the only
 host Cota ever contacts.
 
@@ -140,7 +170,8 @@ falls back to the older `five_hour` / `seven_day` objects if it vanishes. Server
 server says and what the percentage implies.
 
 When it does break, the icon goes to a grey dashed ring and the menu says why.
-Set `COTA_LOG=debug` and the full response lands in `%APPDATA%\Cota\cota.log`.
+Set `COTA_LOG=debug` and the full response lands in `cota.log`, next to
+`config.json`.
 
 ## Build
 
@@ -158,9 +189,14 @@ Set `COTA_LOG=debug` and the full response lands in `%APPDATA%\Cota\cota.log`.
 ./build.sh --dmg         # ... wrap Cota.app in a .dmg
 ```
 
+On Linux the same `./build.sh` builds the binary, and `--package` adds a .deb,
+an .rpm and a .tar.gz. It needs `libgtk-3-dev`, `libayatana-appindicator3-dev`
+and `libssl-dev`. From any other OS, `packaging/linux/Dockerfile` is a Linux to
+build it in.
+
 Needs only the Rust toolchain — no WebView2, no installer tooling. The ring and
-panel layout are shared Rust; only the OS-specific pieces fork (GDI vs AppKit,
-file vs Keychain, WinRT vs `osascript`).
+panel layout are shared Rust; only the OS-specific pieces fork (GDI, AppKit or
+GTK and cairo; file or Keychain; WinRT, `osascript` or `notify-send`).
 
 ## Not yet
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Builds Cota.app for macOS. The counterpart to build.ps1.
+# Builds Cota.app for macOS. The counterpart to build.ps1. On Linux it hands
+# over to packaging/linux/build.sh, which takes --package and --skip-tests.
 #
 #   ./build.sh                # test + release binary + Cota.app (this Mac's arch)
 #   ./build.sh --universal    # ... as one arm64 + x86_64 binary
@@ -15,6 +16,7 @@
 # --theme dark|light and --scale N tune --panel/--shot (defaults: dark, 3).
 set -euo pipefail
 cd "$(dirname "$0")"
+[ "$(uname -s)" = Linux ] && exec packaging/linux/build.sh "$@"
 
 run=0; panel=0; shot=0; icons=0; dmg=0; universal=0; skip_tests=0; skip_bundle=0
 theme=dark; scale=3

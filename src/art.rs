@@ -19,12 +19,24 @@ const GLYPHS: &[(&str, &[u8])] = table!(
 
 /// A glyph for a menu row. macOS draws it as a template image, tinted to suit
 /// a light or dark menu; Windows tray menus are always light, so there it is
-/// drawn in their text colour.
+/// drawn in their text colour. Linux menus follow the desktop, so the ink
+/// follows it too.
 pub fn glyph(name: &str) -> Option<Icon> {
     let (mut px, edge) = decode(GLYPHS.iter().find(|(k, _)| *k == name)?.1)?;
-    if cfg!(windows) {
+    let ink = if cfg!(windows) {
+        Some([0x3a, 0x3a, 0x3c])
+    } else if cfg!(target_os = "linux") {
+        Some(if crate::theme::tray_is_dark() {
+            [0xe6, 0xe6, 0xe6]
+        } else {
+            [0x3a, 0x3a, 0x3c]
+        })
+    } else {
+        None
+    };
+    if let Some(ink) = ink {
         for p in px.chunks_mut(4) {
-            p[..3].copy_from_slice(&[0x3a, 0x3a, 0x3c]);
+            p[..3].copy_from_slice(&ink);
         }
     }
     Icon::from_rgba(px, edge, edge).ok()

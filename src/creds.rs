@@ -1,6 +1,7 @@
 //! Finding the Claude Code OAuth token.
 //!
-//! On Windows the token is a plain JSON file at `~/.claude/.credentials.json`.
+//! On Windows and Linux the token is a plain JSON file at
+//! `~/.claude/.credentials.json`.
 //! On macOS Claude Code puts the same JSON in the login keychain, under the
 //! generic-password service `Claude Code-credentials`; that split is the one
 //! genuinely platform-specific thing in this app. We read the keychain via the
@@ -106,7 +107,7 @@ pub fn load() -> Result<Credentials, CredsError> {
 }
 
 /// The raw credentials JSON, from wherever this platform keeps it.
-#[cfg(windows)]
+#[cfg(not(target_os = "macos"))]
 fn raw_credentials() -> Result<String, CredsError> {
     credentials_file_text()
 }

@@ -142,3 +142,31 @@ mod imp {
         out
     }
 }
+
+// ---------------------------------------------------------------------------
+// Linux
+// ---------------------------------------------------------------------------
+//
+// `notify-send` (libnotify) is on every desktop that shows notifications, and
+// talks to whichever notification daemon it runs. Spawned rather than linked,
+// for the same best-effort contract as the other two.
+#[cfg(target_os = "linux")]
+mod imp {
+    use crate::log::{ldebug, lwarn};
+
+    pub fn show(title: &str, line1: &str, line2: Option<&str>) {
+        let body = match line2 {
+            Some(l2) => format!("{line1}\n{l2}"),
+            None => line1.to_string(),
+        };
+        match std::process::Command::new("notify-send")
+            .args(["--app-name=Cota", "--icon=cota", "--"])
+            .arg(title)
+            .arg(&body)
+            .spawn()
+        {
+            Ok(_) => ldebug!("notification shown: {title} / {line1}"),
+            Err(e) => lwarn!("could not show notification (is notify-send installed?): {e}"),
+        }
+    }
+}

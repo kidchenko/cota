@@ -1,4 +1,5 @@
-//! Persisted user settings, stored as JSON in `%APPDATA%\Cota\config.json`.
+//! Persisted user settings, stored as JSON in `config.json` under
+//! [`Config::dir`].
 //!
 //! There is no settings window. Cantos needed one because it has twenty-one
 //! actions across four corners; Cota has a poll interval and three thresholds,
@@ -56,7 +57,8 @@ impl Default for Config {
 
 impl Config {
     /// `%APPDATA%\Cota` on Windows, `~/Library/Application Support/Cota` on
-    /// macOS — the per-user, per-app spot each platform expects.
+    /// macOS, `~/.config/cota` on Linux — the per-user, per-app spot each
+    /// platform expects.
     #[cfg(windows)]
     pub fn dir() -> Option<PathBuf> {
         std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Cota"))
@@ -65,6 +67,16 @@ impl Config {
     #[cfg(target_os = "macos")]
     pub fn dir() -> Option<PathBuf> {
         std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support/Cota"))
+    }
+
+    /// `$XDG_CONFIG_HOME`, which is `~/.config` unless the user moved it.
+    #[cfg(target_os = "linux")]
+    pub fn dir() -> Option<PathBuf> {
+        std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .filter(|d| d.is_absolute())
+            .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
+            .map(|d| d.join("cota"))
     }
 
     pub fn path() -> Option<PathBuf> {

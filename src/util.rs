@@ -104,3 +104,21 @@ mod imp {
         18
     }
 }
+
+// ---------------------------------------------------------------------------
+// Linux
+// ---------------------------------------------------------------------------
+#[cfg(target_os = "linux")]
+mod imp {
+    /// Hand a path (or URL) to `xdg-open`, which every desktop answers with
+    /// the user's own choice of app.
+    pub fn shell_open(target: &str) {
+        let _ = std::process::Command::new("xdg-open").arg(target).spawn();
+    }
+
+    /// GTK menus draw an item's image at the 16px menu icon size, doubled on a
+    /// HiDPI desktop by GTK itself; 16 is the size to hand it.
+    pub fn menu_icon_edge() -> u32 {
+        16
+    }
+}

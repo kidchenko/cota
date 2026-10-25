@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Cota
+GenericName=Usage Meter
+Comment=Your Claude usage limits, in the tray
+Exec=cota --show-panel
+Icon=cota
+Terminal=false
+Categories=Utility;Development;
+Keywords=claude;usage;limits;quota;ai;
+StartupNotify=false

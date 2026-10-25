@@ -1,4 +1,4 @@
-//! Minimal file logging to `%APPDATA%\Cota\cota.log`.
+//! Minimal file logging to `cota.log`, next to the config.
 //!
 //! Under `windows_subsystem = "windows"` there is no console, so `eprintln!`
 //! goes nowhere. Without a log, "the number looks wrong" is unanswerable — the
@@ -74,7 +74,7 @@ fn stamp() -> String {
     )
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(unix)]
 fn stamp() -> String {
     let dur = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
