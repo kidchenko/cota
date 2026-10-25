@@ -457,12 +457,6 @@ impl App {
         ));
         let _ = menu.append(&PredefinedMenuItem::separator());
         let _ = menu.append(&settings_menu());
-        let _ = menu.append(&MenuItem::with_id(
-            ID_UPDATES,
-            "Check for updates\u{2026}",
-            true,
-            None,
-        ));
         let _ = menu.append(&PredefinedMenuItem::separator());
         let _ = menu.append(&icon_item(ID_QUIT, "Quit Cota", "power", shortcut('q')));
 
@@ -542,6 +536,12 @@ fn settings_menu() -> Submenu {
     ));
     let _ = sub.append(&icon_item(ID_LOG, "Open log", "scroll-text", None));
     let _ = sub.append(&PredefinedMenuItem::separator());
+    let _ = sub.append(&MenuItem::with_id(
+        ID_UPDATES,
+        "Check for updates\u{2026}",
+        true,
+        None,
+    ));
     let _ = sub.append(&MenuItem::with_id(
         ID_ROW,
         concat!("Cota ", env!("CARGO_PKG_VERSION")),
