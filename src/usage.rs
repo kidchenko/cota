@@ -19,7 +19,7 @@
 
 use crate::config::Config;
 use crate::creds::{self, CredsError};
-use crate::log::{ldebug, lwarn};
+use traykit::{ldebug, lwarn};
 use crate::timefmt;
 use serde::Deserialize;
 use std::time::Duration;

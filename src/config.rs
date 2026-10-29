@@ -1,5 +1,8 @@
 //! Persisted user settings, stored as JSON in `config.json` under
-//! [`Config::dir`].
+//! `traykit::dirs::config_dir`: `%APPDATA%\Cota` on Windows,
+//! `~/Library/Application Support/Cota` on macOS, `~/.config/cota` on Linux.
+//! Where the file lives and how it is read and written is traykit's; what is
+//! in it, and how a hand edit is sanitised, is here.
 //!
 //! There is no settings window. Cantos needed one because it has twenty-one
 //! actions across four corners; Cota has a poll interval and three thresholds,
@@ -7,9 +10,9 @@
 //! the whole rest of the app. The tray menu carries the switches that matter
 //! and "Open config folder" carries the rest.
 
-use crate::log::{lerror, linfo};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use traykit::{lerror, linfo};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase", default)]
@@ -56,37 +59,14 @@ impl Default for Config {
 }
 
 impl Config {
-    /// `%APPDATA%\Cota` on Windows, `~/Library/Application Support/Cota` on
-    /// macOS, `~/.config/cota` on Linux — the per-user, per-app spot each
-    /// platform expects.
-    #[cfg(windows)]
-    pub fn dir() -> Option<PathBuf> {
-        std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Cota"))
-    }
-
-    #[cfg(target_os = "macos")]
-    pub fn dir() -> Option<PathBuf> {
-        std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support/Cota"))
-    }
-
-    /// `$XDG_CONFIG_HOME`, which is `~/.config` unless the user moved it.
-    #[cfg(target_os = "linux")]
-    pub fn dir() -> Option<PathBuf> {
-        std::env::var_os("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .filter(|d| d.is_absolute())
-            .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
-            .map(|d| d.join("cota"))
-    }
-
     pub fn path() -> Option<PathBuf> {
-        Self::dir().map(|d| d.join("config.json"))
+        traykit::config::path()
     }
 
     /// Last-modified time of the config file, or `None` if it is not there.
     /// Used to notice a hand edit without parsing the file on every tick.
     pub fn modified() -> Option<std::time::SystemTime> {
-        std::fs::metadata(Self::path()?).ok()?.modified().ok()
+        traykit::config::modified()
     }
 
     /// Read and parse, without logging or falling back to defaults.
@@ -96,19 +76,13 @@ impl Config {
     /// either case — an editor caught mid-save must not reset anyone's
     /// settings.
     pub fn reload() -> Option<Self> {
-        let text = std::fs::read_to_string(Self::path()?).ok()?;
-        Self::parse(&text).ok()
-    }
-
-    fn parse(text: &str) -> Result<Self, serde_json::Error> {
-        // Strip a UTF-8 BOM. serde_json treats one as a syntax error, and
-        // anyone who edits this file in Notepad or writes it from PowerShell
-        // will have one.
-        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
-        serde_json::from_str::<Config>(text).map(Config::sanitised)
+        traykit::config::reload::<Config>().map(Config::sanitised)
     }
 
     /// Never fails: a missing, unreadable, or corrupt file yields defaults.
+    ///
+    /// Not `traykit::config::load`: a file's values are sanitised, and the log
+    /// line records what was loaded, not just where from.
     pub fn load() -> Self {
         let Some(path) = Self::path() else {
             return Self::default();
@@ -117,7 +91,7 @@ impl Config {
             linfo!("no config at {}; using defaults", path.display());
             return Self::default();
         };
-        match Self::parse(&text) {
+        match traykit::config::parse::<Config>(&text).map(Config::sanitised) {
             Ok(c) => {
                 linfo!(
                     "config loaded: enabled={} poll={}s thresholds={:?} notify={} projection={} attribution={}",
@@ -138,14 +112,7 @@ impl Config {
     /// Write via a temp file + rename so an interrupted save can never leave a
     /// half-written config behind.
     pub fn save(&self) -> std::io::Result<()> {
-        let (Some(dir), Some(path)) = (Self::dir(), Self::path()) else {
-            return Err(std::io::Error::other("no config directory in environment"));
-        };
-        std::fs::create_dir_all(&dir)?;
-        let json = serde_json::to_string_pretty(self)?;
-        let tmp = path.with_extension("json.tmp");
-        std::fs::write(&tmp, json)?;
-        std::fs::rename(&tmp, &path)
+        traykit::config::save(self)
     }
 
     /// Clamp anything a hand-edited config could set to a hostile value.

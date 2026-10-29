@@ -10,7 +10,7 @@
 
 use super::*;
 use crate::icon;
-use crate::log::{ldebug, lerror};
+use traykit::{ldebug, lerror};
 
 use std::cell::{Cell, RefCell};
 use std::ptr::NonNull;

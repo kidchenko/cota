@@ -16,11 +16,12 @@
 use crate::burn::Share;
 use crate::config::Config;
 use crate::icon::{self, Face};
-use crate::log::{ldebug, lerror, linfo};
+use traykit::{ldebug, lerror, linfo};
 use crate::panel::{Panel, PanelModel, PanelRow};
 use crate::poller::{Poller, Report, SharedConfig};
 use crate::state::Projection;
-use crate::{art, autostart, creds, log, notify, theme, timefmt, util};
+use crate::{art, creds, notify, timefmt, util};
+use traykit::{autostart, theme};
 
 use tao::event::Event;
 use tao::event_loop::EventLoopProxy;
@@ -168,11 +169,11 @@ impl App {
             Event::UserEvent(UserEvent::Refresh { announce }) => self.poller.refresh(announce),
             Event::UserEvent(UserEvent::ToggleEnabled) => self.toggle_enabled(),
             Event::UserEvent(UserEvent::ToggleAutostart) => self.toggle_autostart(),
-            Event::UserEvent(UserEvent::OpenLog) => log::reveal(),
+            Event::UserEvent(UserEvent::OpenLog) => traykit::log::reveal(),
             Event::UserEvent(UserEvent::OpenConfig) => open_config(),
             // The browser does the comparing, so Cota itself stays off the
             // network except for the one endpoint it exists to read.
-            Event::UserEvent(UserEvent::CheckUpdates) => util::shell_open(concat!(
+            Event::UserEvent(UserEvent::CheckUpdates) => traykit::util::shell_open(concat!(
                 "https://josebarbosa.dev/cota/?v=",
                 env!("CARGO_PKG_VERSION")
             )),

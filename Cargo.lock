@@ -183,7 +183,6 @@ version = "0.0.5"
 dependencies = [
  "block2",
  "gtk",
- "libc",
  "muda",
  "objc2",
  "objc2-app-kit",
@@ -195,6 +194,7 @@ dependencies = [
  "tao",
  "tauri-winrt-notification",
  "tray-icon",
+ "traykit",
  "ureq",
  "windows",
  "winresource",
@@ -2102,6 +2102,21 @@ dependencies = [
  "png",
  "thiserror 2.0.20",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "traykit"
+version = "0.1.0"
+source = "git+https://github.com/kidchenko/traykit#5bb51f126f05fed13bb931cb6e1677b8623a61ae"
+dependencies = [
+ "gtk",
+ "libc",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "serde",
+ "serde_json",
+ "windows",
 ]
 
 [[package]]

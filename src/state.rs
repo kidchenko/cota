@@ -19,8 +19,7 @@
 //! Persisted to `%APPDATA%\Cota\state.json` so a restart does not lose the
 //! slope or re-fire a toast that already fired this window.
 
-use crate::config::Config;
-use crate::log::linfo;
+use traykit::linfo;
 use crate::usage::Snapshot;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -140,7 +139,7 @@ fn is_rollover(old: Option<u64>, new: Option<u64>) -> bool {
 
 impl State {
     pub fn path() -> Option<PathBuf> {
-        Config::dir().map(|d| d.join("state.json"))
+        traykit::dirs::config_dir().map(|d| d.join("state.json"))
     }
 
     pub fn load() -> Self {
@@ -156,7 +155,7 @@ impl State {
     /// Best-effort. Losing the file costs a projection for the next ten
     /// minutes and nothing else, so a failure here is never worth surfacing.
     pub fn save(&self) {
-        let (Some(dir), Some(path)) = (Config::dir(), Self::path()) else {
+        let (Some(dir), Some(path)) = (traykit::dirs::config_dir(), Self::path()) else {
             return;
         };
         let _ = std::fs::create_dir_all(&dir);

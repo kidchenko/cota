@@ -34,7 +34,7 @@ pub fn threshold(cfg: &Config, limit: &str, threshold: u8, percent: f64, resets_
 // shortcut is detected and the toasts get the right name and icon.
 #[cfg(windows)]
 mod imp {
-    use crate::log::{ldebug, lwarn};
+    use traykit::{ldebug, lwarn};
     use tauri_winrt_notification::{Duration, Toast};
 
     /// Matches the `AppUserModelID` the installer stamps on the Start Menu
@@ -97,7 +97,7 @@ mod imp {
 // cannot be shown must never stall the poll loop.
 #[cfg(target_os = "macos")]
 mod imp {
-    use crate::log::{ldebug, lwarn};
+    use traykit::{ldebug, lwarn};
 
     pub fn show(title: &str, line1: &str, line2: Option<&str>) {
         // Notification anatomy on macOS is title / subtitle / body. We map the
@@ -152,7 +152,7 @@ mod imp {
 // for the same best-effort contract as the other two.
 #[cfg(target_os = "linux")]
 mod imp {
-    use crate::log::{ldebug, lwarn};
+    use traykit::{ldebug, lwarn};
 
     pub fn show(title: &str, line1: &str, line2: Option<&str>) {
         let body = match line2 {

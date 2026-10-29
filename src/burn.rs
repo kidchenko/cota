@@ -22,7 +22,7 @@
 //! and nowhere else — see `state.rs` for why that separation matters.
 
 use crate::creds;
-use crate::log::{ldebug, linfo};
+use traykit::{ldebug, linfo};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};

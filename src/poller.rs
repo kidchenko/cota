@@ -12,7 +12,7 @@
 
 use crate::burn::{Attribution, Share};
 use crate::config::Config;
-use crate::log::{ldebug, lerror, linfo, lwarn};
+use traykit::{ldebug, lerror, linfo, lwarn};
 use crate::state::{Projection, Rollover, State};
 use crate::usage::{self, FetchError, Snapshot};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};

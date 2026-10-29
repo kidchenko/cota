@@ -10,9 +10,9 @@
 
 use super::*;
 use crate::icon;
-use crate::log::{ldebug, lerror};
+use traykit::{ldebug, lerror};
 use crate::usage::Severity;
-use crate::util::{pcwstr, wide};
+use traykit::util::{pcwstr, wide};
 use std::cell::RefCell;
 
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};

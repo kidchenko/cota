@@ -17,7 +17,7 @@
 //! for none of the code, and none of the risk of two processes racing to spend
 //! a single-use refresh token.
 
-use crate::log::lwarn;
+use traykit::lwarn;
 use serde::Deserialize;
 use std::path::PathBuf;
 

@@ -26,7 +26,7 @@ pub fn glyph(name: &str) -> Option<Icon> {
     let ink = if cfg!(windows) {
         Some([0x3a, 0x3a, 0x3c])
     } else if cfg!(target_os = "linux") {
-        Some(if crate::theme::tray_is_dark() {
+        Some(if traykit::theme::tray_is_dark() {
             [0xe6, 0xe6, 0xe6]
         } else {
             [0x3a, 0x3a, 0x3c]

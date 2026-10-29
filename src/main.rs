@@ -13,32 +13,38 @@
 //! | `poller`   | the background thread that drives all of the above       |
 //! | `icon`     | draws the ring                                           |
 //! | `app`      | the tray icon and its menu                               |
+//!
+//! The pieces every kidchenko tray app shares (log, config folder, single
+//! instance, autostart, theme) come from `traykit`.
 
 mod app;
 mod art;
-mod autostart;
 mod burn;
 mod config;
 mod creds;
 mod icon;
-mod log;
 mod notify;
 mod panel;
 mod poller;
-mod single_instance;
 mod state;
-mod theme;
 mod timefmt;
 mod usage;
 mod util;
 
 use app::{App, Flow, UserEvent};
 use config::Config;
-use log::{lerror, linfo, lwarn};
 use std::sync::{Arc, Mutex};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
+use traykit::{lerror, linfo, lwarn};
 
 fn main() {
+    traykit::init(traykit::App {
+        name: "Cota",
+        id: "cota",
+        bundle_id: "com.kidchenko.cota",
+        summary: "Your Claude usage limits, in the tray",
+    });
+
     // Writes every icon face to a directory as raw RGBA and exits. There is no
     // console under `windows_subsystem = "windows"`, so the ring is otherwise
     // only ever visible at 16x16 in the corner of a taskbar — which is a poor
@@ -66,12 +72,11 @@ fn main() {
         return;
     }
 
-    log::init();
     log_startup();
 
     // If we are the second launch, the first has been asked to report and
     // there is nothing left for us to do.
-    let Some(signal) = single_instance::acquire() else {
+    let Some(signal) = traykit::single_instance::acquire() else {
         linfo!("another instance owns the tray; asked it to report, exiting");
         return;
     };

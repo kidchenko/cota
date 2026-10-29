@@ -20,6 +20,9 @@ serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
 tao        = "0.37"
 tray-icon  = "0.26"
+# The log, config folder, single instance, autostart and theme every
+# kidchenko tray app shares.
+traykit    = { git = "https://github.com/kidchenko/traykit" }
 # Blocking. Picked over reqwest because this app makes one GET a minute and a
 # Tokio runtime would cost more binary than the feature.
 #
@@ -50,14 +53,9 @@ features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
-    "Win32_Security",
     "Win32_System_LibraryLoader",
-    "Win32_System_Registry",
-    "Win32_System_SystemInformation",
-    "Win32_System_Threading",
     "Win32_UI_HiDpi",
     "Win32_UI_Input_KeyboardAndMouse",
-    "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
 ]
 
@@ -71,25 +69,22 @@ winresource = "0.1"
 # ---------------------------------------------------------------------------
 # objc2 and its framework bindings are compile-time only — they generate
 # zero-cost method wrappers, so the ring's "native, no heavy runtime" claim
-# holds on this side too. `libc` is for localtime_r (the log timestamp) and the
-# single-instance lock.
+# holds on this side too.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2            = "0.6"
 objc2-foundation = "0.3"
 objc2-app-kit    = "0.3"
 block2           = "0.6"
-libc             = "0.2"
 
 # ---------------------------------------------------------------------------
 # Linux
 # ---------------------------------------------------------------------------
 # GTK is already in the tree for the tray (an AppIndicator menu is a GTK
 # menu); the panel is a GTK window painted with cairo and pango, as Sonus's
-# is. `libc` is for localtime_r, as on macOS.
+# is.
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk        = "0.18"
 pangocairo = "0.18"
-libc       = "0.2"
 
 # Size is a first-class goal, same as Cantos.
 [profile.release]
