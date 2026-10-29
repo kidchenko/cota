@@ -17,9 +17,9 @@
 //! for none of the code, and none of the risk of two processes racing to spend
 //! a single-use refresh token.
 
-use traykit::lwarn;
 use serde::Deserialize;
 use std::path::PathBuf;
+use traykit::lwarn;
 
 #[derive(Deserialize)]
 struct CredentialsFile {

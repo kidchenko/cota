@@ -34,8 +34,8 @@ pub fn threshold(cfg: &Config, limit: &str, threshold: u8, percent: f64, resets_
 // shortcut is detected and the toasts get the right name and icon.
 #[cfg(windows)]
 mod imp {
-    use traykit::{ldebug, lwarn};
     use tauri_winrt_notification::{Duration, Toast};
+    use traykit::{ldebug, lwarn};
 
     /// Matches the `AppUserModelID` the installer stamps on the Start Menu
     /// shortcut. The two must stay in step: Windows resolves a toast's name and

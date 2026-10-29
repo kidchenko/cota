@@ -19,11 +19,11 @@
 //! Persisted to `%APPDATA%\Cota\state.json` so a restart does not lose the
 //! slope or re-fire a toast that already fired this window.
 
-use traykit::linfo;
 use crate::usage::Snapshot;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use traykit::linfo;
 
 /// Samples older than this are dropped: a week-long window would otherwise
 /// average this morning's burst with last Tuesday's idle and project nothing

@@ -22,10 +22,10 @@
 //! and nowhere else — see `state.rs` for why that separation matters.
 
 use crate::creds;
-use traykit::{ldebug, linfo};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use traykit::{ldebug, linfo};
 
 /// Token weights, in input-token-equivalents, from the published Opus price
 /// ratios ($5 in / $25 out per MTok, cache reads at a tenth, writes at 1.25x).

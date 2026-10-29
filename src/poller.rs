@@ -12,12 +12,12 @@
 
 use crate::burn::{Attribution, Share};
 use crate::config::Config;
-use traykit::{ldebug, lerror, linfo, lwarn};
 use crate::state::{Projection, Rollover, State};
 use crate::usage::{self, FetchError, Snapshot};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
+use traykit::{ldebug, lerror, linfo, lwarn};
 
 pub type SharedConfig = Arc<Mutex<Config>>;
 

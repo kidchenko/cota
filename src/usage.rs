@@ -19,10 +19,10 @@
 
 use crate::config::Config;
 use crate::creds::{self, CredsError};
-use traykit::{ldebug, lwarn};
 use crate::timefmt;
 use serde::Deserialize;
 use std::time::Duration;
+use traykit::{ldebug, lwarn};
 
 const USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const OAUTH_BETA: &str = "oauth-2025-04-20";

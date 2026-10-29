@@ -16,12 +16,12 @@
 use crate::burn::Share;
 use crate::config::Config;
 use crate::icon::{self, Face};
-use traykit::{ldebug, lerror, linfo};
 use crate::panel::{Panel, PanelModel, PanelRow};
 use crate::poller::{Poller, Report, SharedConfig};
 use crate::state::Projection;
 use crate::{art, creds, notify, timefmt, util};
 use traykit::{autostart, theme};
+use traykit::{ldebug, lerror, linfo};
 
 use tao::event::Event;
 use tao::event_loop::EventLoopProxy;
