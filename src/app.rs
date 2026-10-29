@@ -41,6 +41,7 @@ const ID_CONFIG: &str = "config";
 const ID_LOG: &str = "log";
 const ID_UPDATES: &str = "check-updates";
 const ID_QUIT: &str = "quit";
+const ID_HEADER: &str = "header";
 /// Every read-only row shares this id; nothing ever dispatches on it.
 const ID_ROW: &str = "row";
 
@@ -437,11 +438,13 @@ impl App {
         let menu = Menu::new();
 
         // A header naming the service, so the menu is self-identifying even
-        // though the numbers now live in the panel.
+        // though the numbers now live in the panel. Enabled, and opening the
+        // panel, because Windows greys a disabled item's bitmap and the mark
+        // would lose its colour.
         let _ = menu.append(&IconMenuItem::with_id(
-            ID_ROW,
+            ID_HEADER,
             self.header(),
-            false,
+            true,
             MenuImage::from_rgba(self.mark.clone(), self.mark_edge, self.mark_edge).ok(),
             None,
         ));
@@ -601,7 +604,7 @@ fn forward_menu_events(proxy: &EventLoopProxy<UserEvent>) {
     let proxy = proxy.clone();
     MenuEvent::set_event_handler(Some(move |e: MenuEvent| {
         let event = match e.id.0.as_str() {
-            ID_PANEL => UserEvent::TogglePanel,
+            ID_PANEL | ID_HEADER => UserEvent::TogglePanel,
             ID_REFRESH => UserEvent::Refresh { announce: false },
             ID_ENABLED => UserEvent::ToggleEnabled,
             ID_AUTOSTART => UserEvent::ToggleAutostart,
