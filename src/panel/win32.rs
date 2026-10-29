@@ -17,7 +17,7 @@ use std::cell::RefCell;
 
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::{
-    DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+    DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
 };
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -80,6 +80,10 @@ struct PanelState {
     pinned: bool,
     /// When the panel last went away. See `Panel::toggle`.
     hidden_at: Option<std::time::Instant>,
+    /// DWM rounds the window and draws its border (Windows 11). A square
+    /// border of our own would be clipped at every corner, so it is only drawn
+    /// where DWM does neither.
+    dwm_frame: bool,
 }
 
 thread_local! {
@@ -90,6 +94,7 @@ thread_local! {
         mark_edge: 0,
         pinned: false,
         hidden_at: None,
+        dwm_frame: false,
     });
 }
 
@@ -148,14 +153,16 @@ impl Panel {
             .map_err(|e| format!("CreateWindowExW: {e}"))?;
 
             // Windows 11 rounds the corners for us. Older builds return an
-            // error we do not care about.
+            // error, and get a square window with a border painted in `draw`.
             let pref = DWMWCP_ROUND;
-            let _ = DwmSetWindowAttribute(
+            let rounded = DwmSetWindowAttribute(
                 hwnd,
                 DWMWA_WINDOW_CORNER_PREFERENCE,
                 &pref as *const _ as *const _,
                 std::mem::size_of_val(&pref) as u32,
-            );
+            )
+            .is_ok();
+            STATE.with(|s| s.borrow_mut().dwm_frame = rounded);
 
             Ok(Self { hwnd })
         }
@@ -198,6 +205,7 @@ impl Panel {
             s.model = model;
             s.model.height() != before
         });
+        self.border(dark);
         unsafe {
             if resized {
                 // A limit appeared or went away; grow or shrink in place rather
@@ -241,6 +249,7 @@ impl Panel {
                 s.dark = dark;
                 s.model = model;
             });
+            self.border(dark);
 
             let (w, h) = STATE.with(|s| {
                 let s = s.borrow();
@@ -265,6 +274,23 @@ impl Panel {
             let _ = SetForegroundWindow(self.hwnd);
             let _ = InvalidateRect(Some(self.hwnd), None, true);
             ldebug!("panel shown at {x},{y} ({w}x{h} @ {dpi}dpi)");
+        }
+    }
+
+    /// Have DWM draw the border in the theme's colour. Its border follows the
+    /// rounded corner; one painted in the client area would be cut off there.
+    fn border(&self, dark: bool) {
+        if !STATE.with(|s| s.borrow().dwm_frame) {
+            return;
+        }
+        let colour = win_palette(dark).border;
+        unsafe {
+            let _ = DwmSetWindowAttribute(
+                self.hwnd,
+                DWMWA_BORDER_COLOR,
+                &colour as *const _ as *const _,
+                std::mem::size_of_val(&colour) as u32,
+            );
         }
     }
 }
@@ -463,7 +489,9 @@ fn draw(hdc: HDC, rc: RECT) {
         unsafe {
             SetBkMode(hdc, TRANSPARENT);
             FillRect(hdc, &rc, brush(p.bg).0);
-            FrameRect(hdc, &rc, brush(p.border).0);
+            if !state.dwm_frame {
+                FrameRect(hdc, &rc, brush(p.border).0);
+            }
 
             // -- header: quiet chrome, not content ------------------------
             let f = font(scale(12), 400);
@@ -725,7 +753,7 @@ fn bar(
         right,
         bottom: y + h,
     };
-    rounded(hdc, full, h, track);
+    rounded(hdc, full, track);
     let width = right - left;
     let filled = ((percent / 100.0).clamp(0.0, 1.0) * width as f64) as i32;
     if filled > 0 {
@@ -735,7 +763,6 @@ fn bar(
                 right: left + filled.max(h),
                 ..full
             },
-            h,
             fill,
         );
     }
@@ -780,35 +807,84 @@ fn text_width(hdc: HDC, s: &str) -> i32 {
 /// A filled dot, used to mark the limit the server says is currently being
 /// drawn down.
 fn dot(hdc: HDC, cx: i32, cy: i32, d: i32, colour: COLORREF) {
-    unsafe {
-        let b = brush(colour);
-        let old_brush = SelectObject(hdc, b.0.into());
-        let pen = SelectObject(hdc, GetStockObject(NULL_PEN));
-        let r = d / 2;
-        let _ = Ellipse(hdc, cx - r, cy - r, cx + r + 1, cy + r + 1);
-        SelectObject(hdc, pen);
-        SelectObject(hdc, old_brush);
+    // Centred on the middle of pixel (cx, cy), the same span the integer
+    // Ellipse this replaced covered.
+    let (fx, fy, r) = (cx as f64 + 0.5, cy as f64 + 0.5, d as f64 / 2.0);
+    let reach = d / 2 + 1;
+    for y in cy - reach..=cy + reach {
+        for x in cx - reach..=cx + reach {
+            let a = coverage(x, y, |px, py| (px - fx).hypot(py - fy) <= r);
+            blend(hdc, x, y, colour, a);
+        }
     }
 }
 
-fn rounded(hdc: HDC, r: RECT, diameter: i32, colour: COLORREF) {
+/// A horizontal capsule filling `r`: a rectangle whose ends are semicircles of
+/// half its height. Only the end caps are worked out pixel by pixel; the run
+/// between them is one FillRect.
+fn rounded(hdc: HDC, r: RECT, colour: COLORREF) {
+    let h = r.bottom - r.top;
+    if h <= 0 || r.right <= r.left {
+        return;
+    }
+    let rad = h as f64 / 2.0;
+    let cy = r.top as f64 + rad;
+    let (lo, hi) = (r.left as f64 + rad, r.right as f64 - rad);
+    // Columns inside both cap centres are covered top to bottom.
+    let cap = (h + 1) / 2;
+    let (inner_l, inner_r) = (r.left + cap, r.right - cap);
+    if inner_r > inner_l {
+        let inner = RECT {
+            left: inner_l,
+            right: inner_r,
+            ..r
+        };
+        unsafe {
+            FillRect(hdc, &inner, brush(colour).0);
+        }
+    }
+    let inside = |px: f64, py: f64| (px - px.clamp(lo, hi.max(lo))).hypot(py - cy) <= rad;
+    for x in r.left..r.right {
+        if x >= inner_l && x < inner_r {
+            continue;
+        }
+        for y in r.top..r.bottom {
+            blend(hdc, x, y, colour, coverage(x, y, inside));
+        }
+    }
+}
+
+/// How much of pixel (x, y) a shape covers, 0.0..=1.0, from a 4x4 grid of
+/// samples. GDI's own RoundRect and Ellipse are aliased, which at bar and dot
+/// sizes reads as a staircase.
+fn coverage(x: i32, y: i32, inside: impl Fn(f64, f64) -> bool) -> f64 {
+    const SS: i32 = 4;
+    let mut hit = 0;
+    for sy in 0..SS {
+        for sx in 0..SS {
+            let px = x as f64 + (sx as f64 + 0.5) / SS as f64;
+            let py = y as f64 + (sy as f64 + 0.5) / SS as f64;
+            if inside(px, py) {
+                hit += 1;
+            }
+        }
+    }
+    hit as f64 / (SS * SS) as f64
+}
+
+/// Lay `colour` over whatever is already painted at (x, y), `a` of the way.
+fn blend(hdc: HDC, x: i32, y: i32, colour: COLORREF, a: f64) {
+    if a <= 0.0 {
+        return;
+    }
     unsafe {
-        let b = brush(colour);
-        let old_brush = SelectObject(hdc, b.0.into());
-        let pen = SelectObject(hdc, GetStockObject(NULL_PEN));
-        // RoundRect's right/bottom are exclusive; without the +1 the bar is a
-        // pixel short at every size.
-        let _ = RoundRect(
-            hdc,
-            r.left,
-            r.top,
-            r.right + 1,
-            r.bottom + 1,
-            diameter,
-            diameter,
-        );
-        SelectObject(hdc, pen);
-        SelectObject(hdc, old_brush);
+        let under = GetPixel(hdc, x, y).0;
+        let mix = |shift: u32| {
+            let fg = ((colour.0 >> shift) & 0xff) as f64;
+            let bg = ((under >> shift) & 0xff) as f64;
+            ((fg * a + bg * (1.0 - a)).round() as u32) << shift
+        };
+        SetPixel(hdc, x, y, COLORREF(mix(0) | mix(8) | mix(16)));
     }
 }
 
